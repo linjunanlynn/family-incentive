@@ -44,6 +44,11 @@
   }
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html, body {
   background: var(--background);
   color: var(--foreground);
@@ -51,6 +56,11 @@ html, body {
     "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial,
     sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Avoid accidental horizontal page scroll on narrow viewports */
+body {
+  overflow-x: clip;
 }
 
 * {
@@ -77,6 +87,7 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  min-height: 2.75rem;
   padding: 0.5rem 0.9rem;
   border-radius: 10px;
   font-weight: 500;
@@ -84,11 +95,17 @@ html, body {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--foreground);
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
   cursor: pointer;
   user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (min-width: 640px) {
+  .btn { min-height: 2.25rem; }
 }
 .btn:hover { background: var(--surface-2); }
+.btn:active:not(:disabled) { transform: scale(0.98); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-primary {
@@ -108,18 +125,38 @@ html, body {
 .btn-ghost:hover { background: var(--surface-2); }
 
 .btn-icon {
-  width: 36px; height: 36px; padding: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+}
+@media (min-width: 640px) {
+  .btn-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+  }
 }
 
 .input {
   width: 100%;
+  min-height: 2.75rem;
   padding: 0.55rem 0.75rem;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--foreground);
-  font-size: 0.9rem;
+  font-size: 1rem;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  touch-action: manipulation;
+}
+@media (min-width: 640px) {
+  .input {
+    min-height: 0;
+    font-size: 0.9rem;
+  }
 }
 .input:focus {
   outline: none;
@@ -131,13 +168,22 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.25rem 0.6rem;
+  padding: 0.35rem 0.65rem;
+  min-height: 2.25rem;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 500;
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--foreground-muted);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (min-width: 640px) {
+  .chip {
+    min-height: 0;
+    padding: 0.25rem 0.6rem;
+  }
 }
 
 .chip-positive {

@@ -152,18 +152,18 @@ export function DashboardClient(props: Props) {
       <OverviewCheckinNav mode="overview" dateKey={props.selectedDateKey} overviewView={props.view} />
 
       {/* Header */}
-      <section className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-3">
+      <section className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+        <div className="flex items-center gap-3 min-w-0">
           <div
-            className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center"
+            className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center shrink-0"
             style={{ background: `${props.child.color}22`, color: props.child.color }}
           >
             {props.child.emoji}
           </div>
-          <div>
-            <div className="text-xl font-semibold flex items-center gap-2">
-              {pick(props.child)}
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[color:var(--surface-2)] text-[color:var(--foreground-muted)]">
+          <div className="min-w-0">
+            <div className="text-lg sm:text-xl font-semibold flex flex-wrap items-center gap-2">
+              <span className="truncate">{pick(props.child)}</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-[color:var(--surface-2)] text-[color:var(--foreground-muted)] shrink-0">
                 {props.view === "week"
                   ? t.dashboard.titleWeek
                   : props.view === "month"
@@ -171,40 +171,44 @@ export function DashboardClient(props: Props) {
                     : t.dashboard.titleYear}
               </span>
             </div>
-            <div className="text-sm text-[color:var(--foreground-muted)]">{props.rangeLabel}</div>
+            <div className="text-sm text-[color:var(--foreground-muted)] break-words">{props.rangeLabel}</div>
           </div>
         </div>
 
-        <div className="flex-1" />
+        <div className="hidden lg:block flex-1 min-w-4" />
 
-        {/* View switcher */}
-        <div className="card-2 rounded-full p-1 flex items-center">
-          {(["week", "month", "year"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => navigate(v)}
-              className={cn(
-                "px-3 h-8 rounded-full text-sm transition-colors",
-                v === props.view
-                  ? "bg-[color:var(--surface)] shadow-sm"
-                  : "text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]",
-              )}
-            >
-              {v === "week" ? t.common.week : v === "month" ? t.common.month : t.common.year}
-            </button>
-          ))}
+        {/* View switcher + date (full width row on small screens for tap targets) */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center w-full lg:w-auto min-w-0">
+          <div className="card-2 rounded-full p-1 flex items-center justify-center sm:justify-start w-full sm:w-auto">
+            {(["week", "month", "year"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => navigate(v)}
+                className={cn(
+                  "flex-1 sm:flex-initial px-3 min-h-11 sm:min-h-8 h-11 sm:h-8 rounded-full text-sm transition-colors touch-manipulation",
+                  v === props.view
+                    ? "bg-[color:var(--surface)] shadow-sm"
+                    : "text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]",
+                )}
+              >
+                {v === "week" ? t.common.week : v === "month" ? t.common.month : t.common.year}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex justify-center sm:justify-start w-full sm:w-auto overflow-x-auto pb-0.5">
+            <DashboardDateNav
+              selectedDateKey={props.selectedDateKey}
+              onNavigate={(d) => navigate(props.view, d)}
+              onShift={shift}
+            />
+          </div>
         </div>
-
-        <DashboardDateNav
-          selectedDateKey={props.selectedDateKey}
-          onNavigate={(d) => navigate(props.view, d)}
-          onShift={shift}
-        />
       </section>
 
       {/* KPI cards */}
-      <section className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <section className="grid grid-cols-1 min-[380px]:grid-cols-2 md:grid-cols-3 gap-3">
         <KpiCard
           icon={<Sparkles className="w-4 h-4" />}
           label={t.dashboard.currentPoints}
@@ -240,11 +244,13 @@ export function DashboardClient(props: Props) {
       {props.todayCount === 0 && (
         <Link
           href={`/checkin?date=${encodeURIComponent(props.todayDateKey)}`}
-          className="card flex items-center gap-3 p-4 hover:bg-[color:var(--surface-2)] transition-colors"
+          className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center hover:bg-[color:var(--surface-2)] transition-colors touch-manipulation"
         >
-          <PlusCircle className="w-5 h-5 text-[color:var(--primary)]" />
-          <div className="flex-1 text-sm">{t.dashboard.noActivity}</div>
-          <span className="btn btn-primary">{t.dashboard.goCheckin}</span>
+          <div className="flex items-start gap-3 sm:contents">
+            <PlusCircle className="w-5 h-5 text-[color:var(--primary)] shrink-0 mt-0.5 sm:mt-0" />
+            <div className="flex-1 text-sm min-w-0">{t.dashboard.noActivity}</div>
+          </div>
+          <span className="btn btn-primary w-full sm:w-auto justify-center shrink-0">{t.dashboard.goCheckin}</span>
         </Link>
       )}
 
@@ -298,7 +304,7 @@ export function DashboardClient(props: Props) {
               </button>
             </div>
           </div>
-          <div className="flex-1 min-h-[220px] lg:min-h-0 w-full">
+          <div className="flex-1 min-h-[240px] sm:min-h-[220px] lg:min-h-0 w-full min-w-0">
             {chartSeries === "bars" ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barChartData}>
@@ -436,7 +442,7 @@ export function DashboardClient(props: Props) {
                 {r.points * r.occurrences}
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-sm truncate">
+                <div className="text-sm sm:truncate break-words sm:break-normal">
                   {r.behavior?.category && (
                     <span className="text-[color:var(--foreground-muted)] mr-1">
                       {r.behavior.category.emoji}{" "}
@@ -545,14 +551,14 @@ function YearHeatmap({ data, year }: { data: { dateKey: string; net: number }[];
   return (
     <section className="card p-4">
       <div className="font-medium mb-3">{t.dashboard.heatmap} · {year}</div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto -mx-1 px-1 touch-pan-x">
         <div
-          className="grid"
+          className="grid min-h-[88px]"
           style={{
-            gridTemplateRows: "repeat(7, 12px)",
+            gridTemplateRows: "repeat(7, minmax(11px, 1fr))",
             gridAutoFlow: "column",
-            gridAutoColumns: "12px",
-            gap: "3px",
+            gridAutoColumns: "minmax(11px, 14px)",
+            gap: "4px",
           }}
         >
           {cells.map((c, i) => (
@@ -560,7 +566,7 @@ function YearHeatmap({ data, year }: { data: { dateKey: string; net: number }[];
               key={i}
               title={`${toLocalDateKey(c.date)} · ${c.net > 0 ? "+" : ""}${c.net}`}
               style={{ background: color(c.net), borderRadius: 3 }}
-              className="w-3 h-3 hover:ring-2 hover:ring-[color:var(--primary)] transition"
+              className="w-full h-full min-h-[11px] hover:ring-2 hover:ring-[color:var(--primary)] transition touch-manipulation"
             />
           ))}
         </div>

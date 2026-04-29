@@ -12,8 +12,8 @@ export default async function LoginPage() {
   }
   const { t } = await getDict();
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center px-4">
-      <div className="card w-full max-w-md p-8 space-y-6">
+    <div className="min-h-[65dvh] sm:min-h-[70vh] flex flex-col items-center justify-center px-3 sm:px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <div className="card w-full max-w-md p-6 sm:p-8 space-y-5 sm:space-y-6">
         <div className="text-center">
           <div className="text-3xl mb-2">✨</div>
           <h1 className="text-xl font-semibold">{t.appName}</h1>

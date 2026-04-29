@@ -193,25 +193,30 @@ export function CheckinClient({
       <OverviewCheckinNav mode="checkin" dateKey={dateKey} />
 
       {/* Header bar */}
-      <section className="card p-4 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-3">
+      <section className="card p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex items-center gap-3 min-w-0">
           <div
-            className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center"
+            className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center shrink-0"
             style={{ background: `${child.color}22`, color: child.color }}
           >
             {child.emoji}
           </div>
-          <div>
-            <div className="text-lg font-semibold">{pick(child)}</div>
+          <div className="min-w-0">
+            <div className="text-lg font-semibold truncate">{pick(child)}</div>
             <div className="text-sm text-[color:var(--foreground-muted)]">{t.checkin.title}</div>
           </div>
         </div>
 
-        <div className="flex-1" />
+        <div className="hidden sm:block flex-1 min-w-2" />
 
-        <div className="flex items-center gap-1">
-          <button className="btn btn-ghost btn-icon" onClick={() => shiftDate(-1)}>
-            <ChevronLeft className="w-4 h-4" />
+        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1 w-full sm:w-auto">
+          <button
+            type="button"
+            className="btn btn-ghost btn-icon shrink-0"
+            onClick={() => shiftDate(-1)}
+            aria-label={`${t.common.previous} · ${t.checkin.title}`}
+          >
+            <ChevronLeft className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
           <input
             type="date"
@@ -219,12 +224,17 @@ export function CheckinClient({
             onChange={(e) => {
               if (e.target.value) gotoDate(new Date(`${e.target.value}T00:00:00`));
             }}
-            className="input max-w-[160px] text-center"
+            className="input max-w-full min-w-0 flex-1 sm:flex-initial sm:max-w-[180px] text-center"
           />
-          <button className="btn btn-ghost btn-icon" onClick={() => shiftDate(1)}>
-            <ChevronRight className="w-4 h-4" />
+          <button
+            type="button"
+            className="btn btn-ghost btn-icon shrink-0"
+            onClick={() => shiftDate(1)}
+            aria-label={`${t.common.next} · ${t.checkin.title}`}
+          >
+            <ChevronRight className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
-          <button className="btn btn-ghost ml-1" onClick={() => gotoDate(new Date())}>
+          <button type="button" className="btn btn-ghost shrink-0 min-h-11" onClick={() => gotoDate(new Date())}>
             {t.common.today}
           </button>
         </div>
@@ -250,27 +260,37 @@ export function CheckinClient({
       </section>
 
       {/* Category filter */}
-      <section className="flex flex-wrap items-center gap-2">
-        <button
-          className={cn("chip", activeCat === "all" && "bg-[color:var(--surface)] border-[color:var(--primary)] text-[color:var(--foreground)]")}
-          onClick={() => setActiveCat("all")}
-        >
-          {t.checkin.allCategories}
-        </button>
-        {categories.map((c) => (
+      <section className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain pb-1 -mx-1 px-1 touch-pan-x [-webkit-overflow-scrolling:touch] min-w-0 w-full sm:flex-1 sm:pb-0">
           <button
-            key={c.id}
-            className={cn(
-              "chip",
-              activeCat === c.id && "bg-[color:var(--surface)] border-[color:var(--primary)] text-[color:var(--foreground)]",
-            )}
-            onClick={() => setActiveCat(c.id)}
+            type="button"
+            className={cn("chip shrink-0", activeCat === "all" && "bg-[color:var(--surface)] border-[color:var(--primary)] text-[color:var(--foreground)]")}
+            onClick={() => setActiveCat("all")}
           >
-            {c.emoji} {pick(c)}
+            {t.checkin.allCategories}
           </button>
-        ))}
-        <div className="flex-1" />
-        <button className="btn btn-ghost gap-2" onClick={undoLast} disabled={todayLogs.length === 0}>
+          {categories.map((c) => (
+            <button
+              type="button"
+              key={c.id}
+              className={cn(
+                "chip shrink-0 max-w-[85vw] sm:max-w-none",
+                activeCat === c.id && "bg-[color:var(--surface)] border-[color:var(--primary)] text-[color:var(--foreground)]",
+              )}
+              onClick={() => setActiveCat(c.id)}
+            >
+              <span className="truncate">
+                {c.emoji} {pick(c)}
+              </span>
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="btn btn-ghost gap-2 w-full sm:w-auto justify-center shrink-0"
+          onClick={undoLast}
+          disabled={todayLogs.length === 0}
+        >
           <Undo2 className="w-4 h-4" />
           {t.checkin.undoLast}
         </button>
@@ -375,10 +395,13 @@ export function CheckinClient({
       {/* Note modal */}
       {noteFor && (
         <div
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center px-4"
+          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center px-3 pt-8 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-4"
           onClick={() => setNoteFor(null)}
         >
-          <div className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="card w-full max-w-md max-h-[min(90dvh,calc(100dvh-2rem))] overflow-y-auto p-4 sm:p-5 rounded-t-2xl sm:rounded-[var(--radius)]"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="font-medium">{t.checkin.addNote}</div>
               <button className="btn btn-ghost btn-icon" onClick={() => setNoteFor(null)}>
@@ -434,7 +457,7 @@ function BehaviorGrid({
 }) {
   const { pick, t, locale } = useI18n();
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-2">
       {items.map((b) => {
         const log = logByBehaviorId[b.id];
         const done = !!log;
@@ -445,7 +468,7 @@ function BehaviorGrid({
           <div
             key={b.id}
             className={cn(
-              "group relative rounded-xl border p-2.5 sm:p-3 text-left text-sm transition-colors flex items-start gap-2",
+              "group relative rounded-xl border p-3 sm:p-3 text-left text-sm transition-colors flex items-start gap-2.5 min-h-[4.25rem] touch-manipulation",
               !done &&
                 type === "positive" &&
                 "border-[color:color-mix(in_srgb,var(--positive)_30%,transparent)] cursor-pointer hover:bg-[color:color-mix(in_srgb,var(--positive)_8%,transparent)]",
@@ -540,8 +563,9 @@ function BehaviorGrid({
                   e.stopPropagation();
                   onTap(b, true);
                 }}
-                className="opacity-0 group-hover:opacity-100 btn btn-ghost btn-icon shrink-0"
+                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 btn btn-ghost btn-icon shrink-0"
                 title={t.checkin.addNote}
+                aria-label={t.checkin.addNote}
               >
                 <MessageSquarePlus className="w-4 h-4" />
               </button>

@@ -155,8 +155,9 @@ export function AccountsAdmin({
         </form>
       </section>
 
-      <section className="card overflow-hidden">
-        <table className="w-full text-sm">
+      <section className="card overflow-hidden -mx-3 px-0 sm:mx-0 sm:px-0">
+        <div className="overflow-x-auto overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch]">
+        <table className="w-full text-sm min-w-[36rem] sm:min-w-0">
           <thead className="bg-[color:var(--surface-2)] text-left">
             <tr>
               <th className="p-3">{t.auth.username}</th>
@@ -177,11 +178,12 @@ export function AccountsAdmin({
                 <td className="p-3 text-[color:var(--foreground-muted)]">
                   {a.member ? pick(a.member) : a.child ? pick(a.child) : "—"}
                 </td>
-                <td className="p-3 space-x-2">
+                <td className="p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-1">
                   <ResetPwd id={a.id} t={t} onDone={() => router.refresh()} />
                   <button
                     type="button"
-                    className="btn btn-ghost text-xs"
+                    className="btn btn-ghost text-xs justify-center min-h-10"
                     onClick={() =>
                       startTransition(async () => {
                         await setUserDisabledAction(a.id, !a.disabled);
@@ -193,7 +195,7 @@ export function AccountsAdmin({
                   </button>
                   <button
                     type="button"
-                    className="btn btn-ghost text-xs text-[color:var(--negative)]"
+                    className="btn btn-ghost text-xs text-[color:var(--negative)] justify-center min-h-10"
                     onClick={() => {
                       if (!confirm(t.manage.confirmDelete)) return;
                       startTransition(async () => {
@@ -204,11 +206,13 @@ export function AccountsAdmin({
                   >
                     {t.common.delete}
                   </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </section>
     </div>
   );

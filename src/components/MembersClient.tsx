@@ -32,10 +32,10 @@ export function MembersClient({ members }: { members: Member[] }) {
 
   return (
     <div className="space-y-4">
-      <section className="flex items-center gap-3">
+      <section className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <div className="text-lg font-semibold">{t.members.title}</div>
-        <div className="flex-1" />
-        <button className="btn btn-primary" onClick={() => setAdding(true)}>
+        <div className="hidden sm:block flex-1 min-w-2" />
+        <button type="button" className="btn btn-primary w-full sm:w-auto justify-center" onClick={() => setAdding(true)}>
           <Plus className="w-4 h-4" />
           {t.members.add}
         </button>
@@ -113,15 +113,16 @@ function MemberCard({ member, onChangePin }: { member: Member; onChangePin: () =
         : t.members.roleOther;
 
   return (
-    <div className="card p-4 flex items-center gap-3">
+    <div className="card p-4 flex flex-col gap-3 min-[400px]:flex-row min-[400px]:items-center">
+      <div className="flex items-center gap-3 min-w-0">
       <div
-        className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center"
+        className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center shrink-0"
         style={{ background: `${member.color}22`, color: member.color }}
       >
         {member.emoji}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-medium truncate">{pick(member)}</div>
+        <div className="font-medium break-words min-[400px]:truncate">{pick(member)}</div>
         <div className="text-xs text-[color:var(--foreground-muted)]">{roleLabel}</div>
         <div className="text-xs mt-0.5">
           {member.hasPin ? (
@@ -131,14 +132,16 @@ function MemberCard({ member, onChangePin }: { member: Member; onChangePin: () =
           )}
         </div>
       </div>
-      <div className="flex flex-col gap-1">
-        <button className="btn btn-ghost btn-icon" title={t.common.edit} onClick={() => setEditing(true)}>
+      </div>
+      <div className="flex flex-row min-[400px]:flex-col gap-1 justify-end shrink-0">
+        <button type="button" className="btn btn-ghost btn-icon" title={t.common.edit} onClick={() => setEditing(true)}>
           <Pencil className="w-4 h-4" />
         </button>
-        <button className="btn btn-ghost btn-icon" title={t.members.changePin} onClick={onChangePin}>
+        <button type="button" className="btn btn-ghost btn-icon" title={t.members.changePin} onClick={onChangePin}>
           <KeyRound className="w-4 h-4" />
         </button>
         <button
+          type="button"
           className="btn btn-ghost btn-icon"
           title={t.common.delete}
           onClick={() => {

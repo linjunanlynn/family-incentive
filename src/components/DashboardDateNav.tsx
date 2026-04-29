@@ -41,12 +41,22 @@ export function DashboardDateNav({ selectedDateKey, onNavigate, onShift }: Props
   }
 
   useEffect(() => {
+    if (!open) return;
+    function closeIfOutside(target: EventTarget | null) {
+      if (wrapRef.current && target instanceof Node && !wrapRef.current.contains(target)) closePicker();
+    }
     function onDocDown(e: MouseEvent) {
-      if (!open) return;
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) closePicker();
+      closeIfOutside(e.target);
+    }
+    function onTouchEnd(e: TouchEvent) {
+      closeIfOutside(e.target);
     }
     document.addEventListener("mousedown", onDocDown);
-    return () => document.removeEventListener("mousedown", onDocDown);
+    document.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", onDocDown);
+      document.removeEventListener("touchend", onTouchEnd);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -127,7 +137,7 @@ export function DashboardDateNav({ selectedDateKey, onNavigate, onShift }: Props
         <div
           role="dialog"
           aria-label={t.checkin.pickDate}
-          className="absolute right-0 top-[calc(100%+6px)] z-50 w-[min(100vw-2rem,320px)] card p-3 shadow-lg"
+          className="fixed left-3 right-3 top-[max(5.5rem,env(safe-area-inset-top,0px)+4rem)] z-[60] max-h-[min(75dvh,calc(100dvh-7rem))] overflow-y-auto overscroll-contain sm:absolute sm:inset-x-auto sm:left-auto sm:right-0 sm:top-[calc(100%+6px)] sm:max-h-none sm:overflow-visible w-auto sm:w-[min(100vw-2rem,320px)] card p-3 shadow-lg"
         >
           <div className="flex items-center justify-between mb-2 gap-2">
             <button
@@ -166,7 +176,7 @@ export function DashboardDateNav({ selectedDateKey, onNavigate, onShift }: Props
                   type="button"
                   onClick={() => pickDay(day)}
                   className={cn(
-                    "aspect-square max-h-10 rounded-lg text-sm transition-colors",
+                    "aspect-square max-h-11 min-h-[2.75rem] sm:max-h-10 sm:min-h-0 rounded-lg text-sm transition-colors touch-manipulation",
                     !inMonth && "text-[color:var(--foreground-muted)] opacity-55",
                     inMonth && "text-[color:var(--foreground)]",
                     "hover:bg-[color:var(--surface-2)]",

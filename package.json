@@ -11,6 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
+    "db:clear-logs": "tsx scripts/clear-logs.ts",
+    "db:reset-children": "tsx scripts/reset-children.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },

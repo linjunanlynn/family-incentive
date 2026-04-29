@@ -22,6 +22,8 @@ export const viewport: Viewport = {
   themeColor: "#6366f1",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
@@ -82,7 +84,7 @@ export default async function RootLayout({
       lang={locale === "zh" ? "zh-CN" : "en"}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col min-w-0 pt-[env(safe-area-inset-top,0px)]">
         <I18nProvider initialLocale={locale}>
           <TopBar
             t={t}
@@ -90,11 +92,18 @@ export default async function RootLayout({
             currentChildId={safeChildId}
             session={barSession}
           />
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6">{children}</main>
-          <footer className="text-center text-xs text-[color:var(--foreground-muted)] py-6">
+          <main className="flex-1 w-full min-w-0 max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            {children}
+          </main>
+          <footer className="text-center text-xs text-[color:var(--foreground-muted)] py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             Family Incentive · {t.tagline}
           </footer>
-          <Toaster position="top-center" richColors />
+          <Toaster
+            position="top-center"
+            richColors
+            className="!top-[max(0.75rem,env(safe-area-inset-top))] sm:!top-4"
+            toastOptions={{ className: "touch-manipulation" }}
+          />
         </I18nProvider>
       </body>
     </html>

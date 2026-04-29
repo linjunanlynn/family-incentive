@@ -47,8 +47,8 @@ export function ManageClient({
 
   return (
     <div className="space-y-5">
-      <section className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-3">
+      <section className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex items-center gap-3 min-w-0">
           <div
             className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center"
             style={{ background: `${child.color}22`, color: child.color }}
@@ -62,8 +62,8 @@ export function ManageClient({
             </div>
           </div>
         </div>
-        <div className="flex-1" />
-        <button className="btn btn-primary" onClick={() => setShowAddCategory(true)}>
+        <div className="hidden sm:block flex-1 min-w-2" />
+        <button type="button" className="btn btn-primary w-full sm:w-auto justify-center" onClick={() => setShowAddCategory(true)}>
           <Plus className="w-4 h-4" />
           {t.manage.addCategory}
         </button>
@@ -104,20 +104,22 @@ function CategoryCard({ category }: { category: Category }) {
 
   return (
     <div className={cn("card p-4", category.archived && "opacity-60")}>
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
         {!editing ? (
           <>
-            <div className="text-2xl">{category.emoji}</div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium">{pick(category)}</div>
+            <div className="text-2xl shrink-0">{category.emoji}</div>
+            <div className="flex-1 min-w-0 basis-[min(100%,12rem)]">
+              <div className="font-medium break-words">{pick(category)}</div>
               <div className="text-xs text-[color:var(--foreground-muted)]">
                 {category.behaviors.length} {t.common.records}
               </div>
             </div>
-            <button className="btn btn-ghost btn-icon" onClick={() => setEditing(true)} title={t.common.edit}>
+            <div className="flex items-center gap-1 shrink-0 ml-auto">
+            <button type="button" className="btn btn-ghost btn-icon" onClick={() => setEditing(true)} title={t.common.edit}>
               <Pencil className="w-4 h-4" />
             </button>
             <button
+              type="button"
               className="btn btn-ghost btn-icon"
               title={category.archived ? t.manage.restore : t.manage.archive}
               onClick={() =>
@@ -130,6 +132,7 @@ function CategoryCard({ category }: { category: Category }) {
               {category.archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
             </button>
             <button
+              type="button"
               className="btn btn-ghost btn-icon"
               title={t.common.delete}
               onClick={() => {
@@ -142,6 +145,7 @@ function CategoryCard({ category }: { category: Category }) {
             >
               <Trash2 className="w-4 h-4" />
             </button>
+            </div>
           </>
         ) : (
           <CategoryForm
@@ -222,7 +226,7 @@ function BehaviorRow({ behavior }: { behavior: Behavior }) {
   return (
     <div
       className={cn(
-        "rounded-lg border px-3 py-2 flex items-center gap-3 text-sm",
+        "rounded-lg border px-3 py-2.5 flex flex-wrap items-center gap-2 sm:gap-3 text-sm",
         behavior.type === "positive"
           ? "border-[color:color-mix(in_srgb,var(--positive)_25%,transparent)]"
           : "border-[color:color-mix(in_srgb,var(--negative)_25%,transparent)]",
@@ -239,17 +243,19 @@ function BehaviorRow({ behavior }: { behavior: Behavior }) {
       >
         {behavior.type === "positive" ? "☆" : "△"}
       </span>
-      <div className="flex-1 min-w-0">
-        <div className="truncate">{pick(behavior)}</div>
+      <div className="flex-1 min-w-0 basis-[min(100%,14rem)]">
+        <div className="break-words sm:truncate">{pick(behavior)}</div>
         <div className="text-xs text-[color:var(--foreground-muted)]">
           {behavior.type === "positive" ? "+" : "-"}
           {behavior.points} {t.common.points}
         </div>
       </div>
-      <button className="btn btn-ghost btn-icon" onClick={() => setEditing(true)}>
+      <div className="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
+      <button type="button" className="btn btn-ghost btn-icon" onClick={() => setEditing(true)}>
         <Pencil className="w-4 h-4" />
       </button>
       <button
+        type="button"
         className="btn btn-ghost btn-icon"
         title={behavior.archived ? t.manage.restore : t.manage.archive}
         onClick={() =>
@@ -262,6 +268,7 @@ function BehaviorRow({ behavior }: { behavior: Behavior }) {
         {behavior.archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
       </button>
       <button
+        type="button"
         className="btn btn-ghost btn-icon"
         onClick={() => {
           if (!confirm(t.manage.confirmDelete)) return;
@@ -273,6 +280,7 @@ function BehaviorRow({ behavior }: { behavior: Behavior }) {
       >
         <Trash2 className="w-4 h-4" />
       </button>
+      </div>
     </div>
   );
 }
