@@ -40,24 +40,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b0d12;
-    --surface: #14171f;
-    --surface-2: #1b1f2a;
-    --foreground: #f1f5f9;
-    --foreground-muted: #94a3b8;
-    --border: #232936;
-    --primary: #818cf8;
-    --primary-foreground: #0b0d12;
-    --positive: #34d399;
-    --negative: #94a3b8;
-    --negative-soft: #cbd5e1;
-    --negative-strong: #f87171;
-  }
-}
-
 html {
+  color-scheme: light;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }

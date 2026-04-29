@@ -262,7 +262,7 @@ export function RewardsManageClient({
                         {pick(r)}
                       </div>
                       <div className="text-xs text-[color:var(--foreground-muted)] mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                        <span className="inline-flex items-center gap-0.5 font-semibold text-amber-700 dark:text-amber-300">
+                        <span className="inline-flex items-center gap-0.5 font-semibold text-amber-700">
                           <Star
                             className="w-3 h-3 fill-amber-400 text-amber-500"
                             strokeWidth={1.5}

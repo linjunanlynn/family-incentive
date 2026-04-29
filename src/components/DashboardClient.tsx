@@ -673,7 +673,7 @@ function KpiCard({
           aria-hidden
         />
         <div className="relative z-[3] flex items-center gap-2 text-xs font-medium text-[color:var(--foreground-muted)] min-w-0">
-          <span className="inline-flex shrink-0 items-center justify-center rounded-lg bg-amber-100/90 p-1 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+          <span className="inline-flex shrink-0 items-center justify-center rounded-lg bg-amber-100/90 p-1 text-amber-700">
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
           </span>
           <span className="min-w-0 truncate">{label}</span>

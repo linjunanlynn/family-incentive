@@ -460,7 +460,7 @@ export function RewardsClient({
                 </div>
               )}
               <div
-                className="inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 rounded-full bg-amber-100/80 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200 font-bold tabular-nums"
+                className="inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 rounded-full bg-amber-100/80 text-amber-700 font-bold tabular-nums"
               >
                 <Star className="w-4 h-4 fill-amber-400 text-amber-600" strokeWidth={1.5} aria-hidden />
                 −{confirmFor.costPoints}
@@ -708,7 +708,7 @@ function RewardCard({
             </span>
           )}
           {reward.stock !== null && reward.stock > 0 && reward.stock <= 5 && (
-            <span className="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+            <span className="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
               {t.rewards.stockLeft(reward.stock)}
             </span>
           )}
@@ -834,7 +834,7 @@ function StatusPill({ status }: { status: RedemptionStatus }) {
   > = {
     pending: {
       label: t.rewards.statusPending,
-      className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200",
+      className: "bg-amber-100 text-amber-700",
       icon: <Clock className="w-3 h-3" />,
     },
     approved: {
