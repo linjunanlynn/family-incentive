@@ -1,0 +1,123 @@
+// Family children incentive system schema
+// Use PostgreSQL in production (Vercel + Neon, etc.). Local: Docker Postgres or Neon dev branch.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Members (parents / grandparents) ----------
+model Member {
+  id        String   @id @default(cuid())
+  nameZh    String
+  nameEn    String
+  role      String   // "parent" | "grandparent" | "other"
+  emoji     String   @default("👤")
+  color     String   @default("#6366f1")
+  pinHash   String?  // optional 4-digit PIN; null means no PIN protection
+  createdAt DateTime @default(now())
+
+  logs        LogEntry[]
+  userAccount UserAccount?
+}
+
+// ---------- Children ----------
+model Child {
+  id          String   @id @default(cuid())
+  nameZh      String
+  nameEn      String
+  emoji       String   @default("🧒")
+  color       String   @default("#3b82f6") // accent for charts
+  birthday    DateTime?
+  order       Int      @default(0)
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  categories  Category[]
+  logs        LogEntry[]
+  userAccount UserAccount?
+}
+
+// ---------- Login accounts (parents / children) ----------
+model UserAccount {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  /** parent_admin = manage behaviors + accounts; parent = score only; child = read-only overview */
+  accountKind  String
+  memberId     String?  @unique
+  member       Member?  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  childId      String?  @unique
+  child        Child?   @relation(fields: [childId], references: [id], onDelete: Cascade)
+  disabled     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([memberId])
+  @@index([childId])
+}
+
+// ---------- Categories per child ----------
+model Category {
+  id        String   @id @default(cuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  key       String   // stable slug like "resilience"
+  nameZh    String
+  nameEn    String
+  emoji     String   @default("✨")
+  order     Int      @default(0)
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  behaviors Behavior[]
+
+  @@index([childId])
+  @@unique([childId, key])
+}
+
+// ---------- Specific behaviors (positive ☆ or negative △) ----------
+model Behavior {
+  id         String   @id @default(cuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  type       String   // "positive" | "negative"
+  nameZh     String
+  nameEn     String
+  // Points are stored as positive number; sign is implied by type.
+  // E.g. positive type with points=2 -> +2; negative type with points=2 -> -2.
+  points     Int      @default(1)
+  order      Int      @default(0)
+  archived   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  logs       LogEntry[]
+
+  @@index([categoryId])
+}
+
+// ---------- Daily log entries ----------
+model LogEntry {
+  id          String   @id @default(cuid())
+  childId     String
+  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  behaviorId  String
+  behavior    Behavior @relation(fields: [behaviorId], references: [id], onDelete: Cascade)
+  // Denormalized type/points snapshot to keep history stable even if behavior changes later.
+  type        String   // "positive" | "negative"
+  points      Int      // signed value already applied (positive or negative)
+  occurrences Int      @default(1)
+  date        DateTime // local-day boundary (stored as midnight UTC for that local date)
+  notes       String?
+  createdById String?
+  createdBy   Member?  @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([childId, date])
+  @@index([behaviorId])
+}
