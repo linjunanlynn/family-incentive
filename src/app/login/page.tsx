@@ -19,7 +19,7 @@ export default async function LoginPage() {
           <h1 className="text-xl font-semibold">{t.appName}</h1>
           <p className="text-sm text-[color:var(--foreground-muted)] mt-1">{t.auth.loginTitle}</p>
         </div>
-        <LoginForm t={t} />
+        <LoginForm />
         <p className="text-xs text-[color:var(--foreground-muted)] text-center">{t.auth.childReadOnly}</p>
       </div>
     </div>

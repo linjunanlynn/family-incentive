@@ -264,6 +264,97 @@ async function seedChild(child: SeedChild) {
   }
 }
 
+type SeedReward = {
+  key: string; // stable lookup so re-seeds don't duplicate
+  emoji: string;
+  zh: string;
+  en: string;
+  descZh?: string;
+  descEn?: string;
+  costPoints: number;
+  category:
+    | "treat"
+    | "privilege"
+    | "outing"
+    | "toy"
+    | "family"
+    | "learning";
+  cooldownDays?: number;
+  childId?: string | null; // null/undefined = shared
+};
+
+// Default whole-family reward catalog. Tuned for kids ~3-9 yrs old.
+// Costs are deliberately spread so kids can choose between small daily wins
+// (10-25 stars) and saving toward bigger ones (60-200 stars).
+const defaultRewards: SeedReward[] = [
+  // 🍦 Treats
+  { key: "treat-icecream", emoji: "🍦", zh: "一支冰淇淋", en: "One ice-cream cone", descZh: "出门时挑一支自己喜欢的冰淇淋", descEn: "Pick any ice cream when we're out", costPoints: 10, category: "treat" },
+  { key: "treat-snackbox", emoji: "🍪", zh: "选购一份小零食", en: "Pick a small snack", descZh: "去超市自己选一份零食带回家", descEn: "Pick one snack at the store", costPoints: 12, category: "treat" },
+  { key: "treat-bubbletea", emoji: "🧋", zh: "一杯果汁/奶茶", en: "Juice or bubble tea", descZh: "陪爸妈外出时来一杯", descEn: "Get one drink when out with mom/dad", costPoints: 18, category: "treat" },
+  { key: "treat-breakfast", emoji: "🥞", zh: "周末早餐自己点", en: "Pick weekend breakfast", descZh: "周六或周日的早餐由你来定", descEn: "Choose Saturday or Sunday breakfast", costPoints: 15, category: "treat" },
+
+  // 🎮 Privileges
+  { key: "priv-extra-game-15", emoji: "🎮", zh: "额外 15 分钟游戏时间", en: "+15 min game time", descZh: "周末当天可以多玩 15 分钟", descEn: "15 extra game minutes today", costPoints: 12, category: "privilege", cooldownDays: 1 },
+  { key: "priv-extra-game-30", emoji: "🕹️", zh: "额外 30 分钟游戏/平板时间", en: "+30 min screen time", descZh: "周末当天多玩 30 分钟", descEn: "30 extra minutes of games/iPad", costPoints: 22, category: "privilege", cooldownDays: 2 },
+  { key: "priv-late-bed", emoji: "🌙", zh: "周末晚睡 30 分钟", en: "Stay up 30 min later", descZh: "周末当晚可以晚 30 分钟睡觉", descEn: "30-minute later bedtime on a weekend", costPoints: 20, category: "privilege", cooldownDays: 3 },
+  { key: "priv-skip-chore", emoji: "🧺", zh: "免做一次家务", en: "Skip one chore", descZh: "本周可以选一次家务由别人代劳", descEn: "Skip one chore this week", costPoints: 25, category: "privilege", cooldownDays: 3 },
+  { key: "priv-car-dj", emoji: "🎧", zh: "车上音乐 DJ 权", en: "Car-DJ for the day", descZh: "今天坐车你来点歌单", descEn: "You pick the music in the car all day", costPoints: 8, category: "privilege" },
+  { key: "priv-pajama-day", emoji: "🦄", zh: "周末睡衣日", en: "Weekend pajama day", descZh: "周末整天可以一直穿睡衣", descEn: "Stay in PJs all day on a weekend", costPoints: 18, category: "privilege", cooldownDays: 7 },
+
+  // 🏞 Outings
+  { key: "outing-park-half", emoji: "🌳", zh: "公园半日游", en: "Half-day park trip", descZh: "全家去公园玩半天", descEn: "Half a day at the park together", costPoints: 50, category: "outing" },
+  { key: "outing-museum", emoji: "🏛️", zh: "博物馆/科技馆", en: "Museum / science centre", descZh: "周末挑一家博物馆去探索", descEn: "Pick a museum to explore on the weekend", costPoints: 70, category: "outing" },
+  { key: "outing-icecream-trip", emoji: "🍨", zh: "专程去吃冰淇淋", en: "Ice-cream outing", descZh: "专门坐车出去吃一次甜品", descEn: "A dedicated trip out for dessert", costPoints: 35, category: "outing" },
+  { key: "outing-day-out", emoji: "🏖️", zh: "全家半日小旅行", en: "Half-day mini-trip", descZh: "全家一起去近郊玩半天", descEn: "A short half-day trip with the whole family", costPoints: 100, category: "outing" },
+
+  // 🧸 Toys
+  { key: "toy-mystery", emoji: "🧸", zh: "小玩具盲盒", en: "Mystery mini-toy", descZh: "选一个小盲盒/卡通公仔", descEn: "Pick a small blind-box / mini-figure", costPoints: 60, category: "toy" },
+  { key: "toy-sticker", emoji: "🌈", zh: "新一套贴纸/手账", en: "New sticker / craft set", descZh: "选一套自己喜欢的贴纸或手工材料", descEn: "Pick a sticker pack or craft kit", costPoints: 30, category: "toy" },
+  { key: "toy-lego-small", emoji: "🧱", zh: "一盒小颗粒积木", en: "A small Lego set", descZh: "选一盒预算合适的积木", descEn: "Pick a small Lego/brick set", costPoints: 120, category: "toy" },
+  { key: "toy-big-gift", emoji: "🎁", zh: "攒一个大礼物", en: "Save toward a big gift", descZh: "和爸妈一起列愿望清单，攒够再换", descEn: "Save up with mom/dad for a wishlist gift", costPoints: 250, category: "toy" },
+
+  // 👨‍👩‍👧‍👦 Family time
+  { key: "family-movie", emoji: "🍿", zh: "家庭电影夜（自选电影 + 爆米花）", en: "Movie night (you pick + popcorn)", descZh: "周五或周六晚上由你选片", descEn: "You pick the movie on Fri/Sat night", costPoints: 30, category: "family", cooldownDays: 7 },
+  { key: "family-board-game", emoji: "🎲", zh: "家庭桌游 1 小时", en: "1-hr family board games", descZh: "全家陪你玩 1 小时桌游", descEn: "1 hour of board games with everyone", costPoints: 25, category: "family" },
+  { key: "family-1on1", emoji: "🥰", zh: "和爸爸/妈妈专属时光 1 小时", en: "1-on-1 hour with mom or dad", descZh: "你来定做什么，爸爸或妈妈陪你 1 小时", descEn: "Pick the activity, get 1 hour just with mom or dad", costPoints: 35, category: "family" },
+  { key: "family-camp-night", emoji: "🏕️", zh: "客厅露营之夜", en: "Living-room camp-out", descZh: "搭帐篷、讲故事，在客厅过一夜", descEn: "Build a fort and sleep in the living room", costPoints: 70, category: "family" },
+
+  // 📚 Learning
+  { key: "learn-book", emoji: "📚", zh: "选购一本喜欢的绘本", en: "Pick a new picture book", descZh: "去书店挑一本想看的书", descEn: "Pick a book at the bookstore", costPoints: 50, category: "learning" },
+  { key: "learn-art-supplies", emoji: "🎨", zh: "一套新的画材/手工", en: "New art / craft supplies", descZh: "选一套画笔、贴纸或手工材料", descEn: "Pick out a new art or craft kit", costPoints: 60, category: "learning" },
+  { key: "learn-experiment", emoji: "🔬", zh: "一次科学小实验材料", en: "A science-experiment kit", descZh: "一起买材料做一个小科学实验", descEn: "Get materials for a small science experiment", costPoints: 80, category: "learning" },
+];
+
+async function seedRewards() {
+  for (let i = 0; i < defaultRewards.length; i++) {
+    const r = defaultRewards[i];
+    const existing = await prisma.reward.findFirst({
+      where: {
+        // re-use Chinese name as the idempotency key — names are unique enough
+        // for a seed list and do not collide with admin-created ones.
+        nameZh: r.zh,
+        childId: r.childId ?? null,
+      },
+      select: { id: true },
+    });
+    if (existing) continue;
+    await prisma.reward.create({
+      data: {
+        childId: r.childId ?? null,
+        nameZh: r.zh,
+        nameEn: r.en,
+        descZh: r.descZh ?? null,
+        descEn: r.descEn ?? null,
+        emoji: r.emoji,
+        costPoints: r.costPoints,
+        category: r.category,
+        cooldownDays: r.cooldownDays ?? null,
+        order: i,
+      },
+    });
+  }
+}
+
 async function main() {
   for (const m of defaultMembers) {
     await prisma.member.upsert({
@@ -275,6 +366,7 @@ async function main() {
 
   await seedChild(jimmy);
   await seedChild(aimee);
+  await seedRewards();
 
   const defaultPassword = process.env.SEED_DEFAULT_PASSWORD ?? "familydemo";
   const passwordHash = await bcrypt.hash(defaultPassword, 10);
@@ -314,8 +406,9 @@ async function main() {
   const childrenCount = await prisma.child.count();
   const behaviorCount = await prisma.behavior.count();
   const accountCount = await prisma.userAccount.count();
+  const rewardCount = await prisma.reward.count();
   console.log(
-    `✅ Seed complete. Children: ${childrenCount}, Behaviors: ${behaviorCount}, Accounts: ${accountCount} (password: ${defaultPassword})`,
+    `✅ Seed complete. Children: ${childrenCount}, Behaviors: ${behaviorCount}, Rewards: ${rewardCount}, Accounts: ${accountCount} (password: ${defaultPassword})`,
   );
 }
 

@@ -8,14 +8,15 @@ import {
   Calendar,
   CheckSquare,
   ChevronDown,
+  Gift,
   Languages,
   LogOut,
   Settings,
   Shield,
+  Sparkles,
   UserCog,
 } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
-import type { Dict } from "@/i18n/dictionaries";
 import type { AccountKind } from "@/auth/jwt";
 import { cn } from "@/lib/utils";
 import { setCurrentChildAction } from "@/app/actions/session";
@@ -37,19 +38,17 @@ export type TopBarSession = {
 };
 
 export function TopBar({
-  t,
   children_,
   currentChildId,
   session,
 }: {
-  t: Dict;
   children_: ChildLite[];
   currentChildId: string | null;
   session: TopBarSession | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { locale, setLocale, pick } = useI18n();
+  const { t, locale, setLocale, pick } = useI18n();
   const [, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -62,6 +61,7 @@ export function TopBar({
   const coreNav = [
     { href: "/", label: t.nav.dashboard, icon: Calendar, show: true },
     { href: "/checkin", label: t.nav.checkin, icon: CheckSquare, show: !isChild },
+    { href: "/rewards", label: t.nav.rewards, icon: Gift, show: true },
   ].filter((x) => x.show);
 
   useEffect(() => {
@@ -201,6 +201,15 @@ export function TopBar({
               >
                 <Settings className="w-4 h-4 text-[color:var(--foreground-muted)]" />
                 {t.nav.manage}
+              </Link>
+              <Link
+                role="menuitem"
+                href="/rewards/manage"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 px-3 py-3 sm:py-2.5 text-sm hover:bg-[color:var(--surface-2)] active:bg-[color:var(--surface-2)] min-h-11"
+              >
+                <Sparkles className="w-4 h-4 text-[color:var(--foreground-muted)]" />
+                {t.nav.manageRewards}
               </Link>
               <Link
                 role="menuitem"

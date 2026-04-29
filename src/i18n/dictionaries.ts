@@ -9,7 +9,9 @@ type Messages = {
   nav: {
     dashboard: string;
     checkin: string;
+    rewards: string;
     manage: string;
+    manageRewards: string;
     members: string;
     periodOverview: string;
     dailyCheckin: string;
@@ -100,6 +102,97 @@ type Messages = {
     roleGrandparent: string; roleOther: string; pinSet: string; pinNotSet: string;
     changePin: string; removePin: string;
   };
+  rewards: {
+    shopTitle: string;
+    shopSubtitle: string;
+    available: string;
+    earned: string;
+    spent: string;
+    pending: string;
+    starUnit: string;
+    cost: string;
+    redeem: string;
+    redeemAgain: string;
+    requestForKid: string;
+    locked: string;
+    needMore: string;
+    saveMore: string;
+    saving: string;
+    saveTip: (n: number) => string;
+    progressLabel: string;
+    onlyForChild: string;
+    sharedReward: string;
+    stockLeft: (n: number) => string;
+    outOfStock: string;
+    cooldownActive: string;
+    cooldownDays: (n: number) => string;
+    confirmTitle: string;
+    confirmBody: (cost: number) => string;
+    addNote: string;
+    notePlaceholder: string;
+    submit: string;
+    submitted: string;
+    submittedHint: string;
+    awaitingApproval: string;
+    awaitingFulfillment: string;
+    historyTitle: string;
+    statusPending: string;
+    statusApproved: string;
+    statusFulfilled: string;
+    statusRejected: string;
+    statusCancelled: string;
+    cancel: string;
+    cancelMine: string;
+    inboxTitle: string;
+    inboxEmpty: string;
+    approve: string;
+    reject: string;
+    fulfill: string;
+    reviewedBy: string;
+    requestedBy: string;
+    selfRequested: string;
+    catalogEmpty: string;
+    tabAll: string;
+    catTreat: string;
+    catPrivilege: string;
+    catOuting: string;
+    catToy: string;
+    catFamily: string;
+    catLearning: string;
+    manageTitle: string;
+    addReward: string;
+    editReward: string;
+    rewardNameZh: string;
+    rewardNameEn: string;
+    rewardDescZh: string;
+    rewardDescEn: string;
+    rewardEmoji: string;
+    rewardCost: string;
+    rewardCategory: string;
+    rewardScope: string;
+    rewardScopeAll: string;
+    rewardStock: string;
+    rewardStockUnlimited: string;
+    rewardCooldown: string;
+    rewardCooldownNone: string;
+    archive: string;
+    restore: string;
+    delete: string;
+    confirmDelete: string;
+    insufficient: string;
+    forbidden: string;
+    refunded: string;
+    pickChild: string;
+    inboxFilterAll: string;
+    inboxFilterPending: string;
+    inboxFilterApproved: string;
+    inboxFilterDone: string;
+    browseOnlyTitle: string;
+    browseOnlyBody: string;
+    browseOnlyFoot: string;
+    mustLoginToRequest: string;
+    historyLoginHint: string;
+  };
   weekdays: string[];
   weekdaysShort: string[];
   months: string[];
@@ -112,7 +205,9 @@ export const dict: Record<Locale, Messages> = {
     nav: {
       dashboard: "总览",
       checkin: "打卡",
+      rewards: "积分小铺",
       manage: "行为配置",
+      manageRewards: "奖励配置",
       members: "家庭成员",
       periodOverview: "周期总览",
       dailyCheckin: "当日打分",
@@ -235,6 +330,98 @@ export const dict: Record<Locale, Messages> = {
       changePin: "修改 PIN",
       removePin: "移除 PIN",
     },
+    rewards: {
+      shopTitle: "积分小铺",
+      shopSubtitle: "用你的星星，换喜欢的奖励吧 ✨",
+      available: "可用星星",
+      earned: "累计获得",
+      spent: "已经花掉",
+      pending: "申请中（待爸妈确认）",
+      starUnit: "颗星",
+      cost: "花费",
+      redeem: "立即兑换",
+      redeemAgain: "再来一次",
+      requestForKid: "代TA申请",
+      locked: "再加把劲",
+      needMore: "还差",
+      saveMore: "继续努力哦！",
+      saving: "正在攒大礼物",
+      saveTip: (n: number) => `还差 ${n} 颗星就能拿到啦`,
+      progressLabel: "兑换进度",
+      onlyForChild: "专属奖励",
+      sharedReward: "全家奖励",
+      stockLeft: (n: number) => `仅剩 ${n} 个`,
+      outOfStock: "已被换光",
+      cooldownActive: "暂时不能再换",
+      cooldownDays: (n: number) => `每 ${n} 天可换 1 次`,
+      confirmTitle: "确定要兑换吗？",
+      confirmBody: (cost: number) => `这会用掉你 ${cost} 颗星星，要继续吗？`,
+      addNote: "想对爸妈说点什么？（可选）",
+      notePlaceholder: "比如：周六晚上想看《冰雪奇缘》",
+      submit: "确认申请",
+      submitted: "已发送给爸妈！",
+      submittedHint: "等爸妈点头，星星就会被取走 ⭐",
+      awaitingApproval: "等待爸妈确认",
+      awaitingFulfillment: "已确认，等待兑现",
+      historyTitle: "我的兑换记录",
+      statusPending: "待审核",
+      statusApproved: "已确认",
+      statusFulfilled: "已完成",
+      statusRejected: "未通过",
+      statusCancelled: "已取消",
+      cancel: "取消",
+      cancelMine: "撤回申请",
+      inboxTitle: "兑换审核",
+      inboxEmpty: "暂时没有需要处理的申请",
+      approve: "通过",
+      reject: "驳回",
+      fulfill: "标记已兑现",
+      reviewedBy: "审核人",
+      requestedBy: "申请人",
+      selfRequested: "孩子自己",
+      catalogEmpty: "还没有可兑换的奖励，让爸妈去配置吧～",
+      tabAll: "全部",
+      catTreat: "美食小零嘴",
+      catPrivilege: "特别权利",
+      catOuting: "出游探索",
+      catToy: "玩具收藏",
+      catFamily: "亲子时光",
+      catLearning: "学习装备",
+      manageTitle: "奖励配置",
+      addReward: "新增奖励",
+      editReward: "编辑奖励",
+      rewardNameZh: "奖励名（中文）",
+      rewardNameEn: "奖励名（英文）",
+      rewardDescZh: "描述（中文）",
+      rewardDescEn: "描述（英文）",
+      rewardEmoji: "图标",
+      rewardCost: "需要的星星数",
+      rewardCategory: "类别",
+      rewardScope: "适用范围",
+      rewardScopeAll: "全家所有孩子",
+      rewardStock: "数量上限",
+      rewardStockUnlimited: "不限",
+      rewardCooldown: "冷却天数",
+      rewardCooldownNone: "无",
+      archive: "下架",
+      restore: "上架",
+      delete: "删除",
+      confirmDelete: "确定删除该奖励？",
+      insufficient: "星星不够呢，再继续努力吧！",
+      forbidden: "当前账号无权操作",
+      refunded: "未通过，星星已退还",
+      pickChild: "为谁兑换",
+      inboxFilterAll: "全部",
+      inboxFilterPending: "待审核",
+      inboxFilterApproved: "已确认",
+      inboxFilterDone: "已完成",
+      browseOnlyTitle: "浏览模式",
+      browseOnlyBody:
+        "未登录只能查看积分和礼品目录。要提交兑换，请让孩子登录自己的账号，或由家长登录后代为申请。",
+      browseOnlyFoot: "孩子账号或家长账号登录后即可申请兑换",
+      mustLoginToRequest: "请先登录：孩子本人登录，或由家长登录后代为申请。",
+      historyLoginHint: "登录后可查看该孩子的兑换记录。",
+    },
     auth: {
       loginTitle: "登录",
       username: "用户名",
@@ -282,7 +469,9 @@ export const dict: Record<Locale, Messages> = {
     nav: {
       dashboard: "Overview",
       checkin: "Check-in",
+      rewards: "Rewards",
       manage: "Behaviors",
+      manageRewards: "Reward catalog",
       members: "Members",
       periodOverview: "Period overview",
       dailyCheckin: "Daily score",
@@ -404,6 +593,98 @@ export const dict: Record<Locale, Messages> = {
       pinNotSet: "No PIN",
       changePin: "Change PIN",
       removePin: "Remove PIN",
+    },
+    rewards: {
+      shopTitle: "Reward shop",
+      shopSubtitle: "Spend your stars on something you love ✨",
+      available: "Stars to spend",
+      earned: "Earned all-time",
+      spent: "Already spent",
+      pending: "Awaiting approval",
+      starUnit: "stars",
+      cost: "Cost",
+      redeem: "Redeem",
+      redeemAgain: "Redeem again",
+      requestForKid: "Redeem for kid",
+      locked: "Keep going!",
+      needMore: "Need",
+      saveMore: "You can do it!",
+      saving: "Saving up",
+      saveTip: (n: number) => `${n} more stars to unlock`,
+      progressLabel: "Progress",
+      onlyForChild: "Just for them",
+      sharedReward: "Whole-family",
+      stockLeft: (n: number) => `Only ${n} left`,
+      outOfStock: "Out of stock",
+      cooldownActive: "Cooling down",
+      cooldownDays: (n: number) => `1× every ${n} days`,
+      confirmTitle: "Spend your stars?",
+      confirmBody: (cost: number) => `This will use ${cost} of your stars. Continue?`,
+      addNote: "Anything to tell mom & dad? (optional)",
+      notePlaceholder: "e.g. I'd like to watch Frozen on Saturday night",
+      submit: "Send request",
+      submitted: "Sent to mom & dad!",
+      submittedHint: "Stars will be deducted once they approve ⭐",
+      awaitingApproval: "Waiting for approval",
+      awaitingFulfillment: "Approved, awaiting fulfillment",
+      historyTitle: "My redemptions",
+      statusPending: "Pending",
+      statusApproved: "Approved",
+      statusFulfilled: "Done",
+      statusRejected: "Rejected",
+      statusCancelled: "Cancelled",
+      cancel: "Cancel",
+      cancelMine: "Withdraw request",
+      inboxTitle: "Reward inbox",
+      inboxEmpty: "No pending requests right now",
+      approve: "Approve",
+      reject: "Reject",
+      fulfill: "Mark fulfilled",
+      reviewedBy: "Reviewed by",
+      requestedBy: "Requested by",
+      selfRequested: "the kid",
+      catalogEmpty: "No rewards yet — ask the admin to add some!",
+      tabAll: "All",
+      catTreat: "Treats",
+      catPrivilege: "Privileges",
+      catOuting: "Outings",
+      catToy: "Toys",
+      catFamily: "Family time",
+      catLearning: "Learning",
+      manageTitle: "Reward catalog",
+      addReward: "Add reward",
+      editReward: "Edit reward",
+      rewardNameZh: "Name (中文)",
+      rewardNameEn: "Name (English)",
+      rewardDescZh: "Description (中文)",
+      rewardDescEn: "Description (English)",
+      rewardEmoji: "Emoji",
+      rewardCost: "Star cost",
+      rewardCategory: "Category",
+      rewardScope: "Available to",
+      rewardScopeAll: "All children",
+      rewardStock: "Stock cap",
+      rewardStockUnlimited: "Unlimited",
+      rewardCooldown: "Cooldown days",
+      rewardCooldownNone: "None",
+      archive: "Archive",
+      restore: "Restore",
+      delete: "Delete",
+      confirmDelete: "Delete this reward?",
+      insufficient: "Not enough stars yet — keep earning!",
+      forbidden: "Not allowed",
+      refunded: "Rejected — stars refunded.",
+      pickChild: "For",
+      inboxFilterAll: "All",
+      inboxFilterPending: "Pending",
+      inboxFilterApproved: "Approved",
+      inboxFilterDone: "Fulfilled",
+      browseOnlyTitle: "Browse only",
+      browseOnlyBody:
+        "You can view stars and the reward catalog. To submit a redemption, sign in as the child, or as a parent to request on their behalf.",
+      browseOnlyFoot: "Sign in as a child or parent account to request a reward.",
+      mustLoginToRequest: "Please sign in: as the child, or as a parent to redeem for them.",
+      historyLoginHint: "Sign in to see this child’s redemption history.",
     },
     auth: {
       loginTitle: "Sign in",

@@ -42,20 +42,16 @@ export function DashboardDateNav({ selectedDateKey, onNavigate, onShift }: Props
 
   useEffect(() => {
     if (!open) return;
+    if (typeof window !== "undefined" && window.innerWidth < 640) return;
     function closeIfOutside(target: EventTarget | null) {
       if (wrapRef.current && target instanceof Node && !wrapRef.current.contains(target)) closePicker();
     }
     function onDocDown(e: MouseEvent) {
       closeIfOutside(e.target);
     }
-    function onTouchEnd(e: TouchEvent) {
-      closeIfOutside(e.target);
-    }
     document.addEventListener("mousedown", onDocDown);
-    document.addEventListener("touchend", onTouchEnd, { passive: true });
     return () => {
       document.removeEventListener("mousedown", onDocDown);
-      document.removeEventListener("touchend", onTouchEnd);
     };
   }, [open]);
 
@@ -97,6 +93,66 @@ export function DashboardDateNav({ selectedDateKey, onNavigate, onShift }: Props
     closePicker();
   }
 
+  const pickerContent = (
+    <>
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <button
+          type="button"
+          className="btn btn-ghost btn-icon"
+          onClick={() => setMonthCursor((m) => addMonths(m, -1))}
+          aria-label={t.common.previous}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <div className="text-sm font-medium text-center flex-1">{monthTitle}</div>
+        <button
+          type="button"
+          className="btn btn-ghost btn-icon"
+          onClick={() => setMonthCursor((m) => addMonths(m, 1))}
+          aria-label={t.common.next}
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-0.5 text-center text-[11px] text-[color:var(--foreground-muted)] mb-1">
+        {wkLabels.map((wd) => (
+          <div key={wd} className="py-1 font-medium">
+            {wd}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-0.5">
+        {days.map((day) => {
+          const inMonth = isSameMonth(day, monthCursor);
+          const sel = isSameDay(day, selected);
+          const td = isToday(day);
+          return (
+            <button
+              key={toLocalDateKey(day)}
+              type="button"
+              onClick={() => pickDay(day)}
+              className={cn(
+                "aspect-square max-h-11 min-h-[2.75rem] sm:max-h-10 sm:min-h-0 rounded-lg text-sm transition-colors touch-manipulation",
+                !inMonth && "text-[color:var(--foreground-muted)] opacity-55",
+                inMonth && "text-[color:var(--foreground)]",
+                "hover:bg-[color:var(--surface-2)]",
+                sel &&
+                  "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] font-semibold hover:opacity-90",
+                td && !sel && "ring-1 ring-inset ring-[color:var(--primary)]/45",
+              )}
+            >
+              {format(day, "d")}
+            </button>
+          );
+        })}
+      </div>
+      <div className="divider my-3" />
+      <button type="button" className="btn btn-primary w-full" onClick={goToday}>
+        {t.common.today}
+      </button>
+    </>
+  );
+
   return (
     <div ref={wrapRef} className="relative flex items-center gap-1">
       <button
@@ -134,67 +190,28 @@ export function DashboardDateNav({ selectedDateKey, onNavigate, onShift }: Props
       </button>
 
       {open && (
-        <div
-          role="dialog"
-          aria-label={t.checkin.pickDate}
-          className="fixed left-3 right-3 top-[max(5.5rem,env(safe-area-inset-top,0px)+4rem)] z-[60] max-h-[min(75dvh,calc(100dvh-7rem))] overflow-y-auto overscroll-contain sm:absolute sm:inset-x-auto sm:left-auto sm:right-0 sm:top-[calc(100%+6px)] sm:max-h-none sm:overflow-visible w-auto sm:w-[min(100vw-2rem,320px)] card p-3 shadow-lg"
-        >
-          <div className="flex items-center justify-between mb-2 gap-2">
-            <button
-              type="button"
-              className="btn btn-ghost btn-icon"
-              onClick={() => setMonthCursor((m) => addMonths(m, -1))}
-              aria-label={t.common.previous}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div className="text-sm font-medium text-center flex-1">{monthTitle}</div>
-            <button
-              type="button"
-              className="btn btn-ghost btn-icon"
-              onClick={() => setMonthCursor((m) => addMonths(m, 1))}
-              aria-label={t.common.next}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+        <>
+          <button
+            type="button"
+            aria-label="Close date picker backdrop"
+            className="fixed inset-0 z-[58] bg-black/20 backdrop-blur-[1px] sm:hidden"
+            onClick={closePicker}
+          />
+          <div
+            role="dialog"
+            aria-label={t.checkin.pickDate}
+            className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom,0px))] z-[60] max-h-[78dvh] overflow-y-auto overscroll-contain sm:hidden card p-3 shadow-lg"
+          >
+            {pickerContent}
           </div>
-          <div className="grid grid-cols-7 gap-0.5 text-center text-[11px] text-[color:var(--foreground-muted)] mb-1">
-            {wkLabels.map((wd) => (
-              <div key={wd} className="py-1 font-medium">
-                {wd}
-              </div>
-            ))}
+          <div
+            role="dialog"
+            aria-label={t.checkin.pickDate}
+            className="hidden sm:block absolute right-0 top-[calc(100%+6px)] z-[60] w-[min(100vw-2rem,320px)] card p-3 shadow-lg"
+          >
+            {pickerContent}
           </div>
-          <div className="grid grid-cols-7 gap-0.5">
-            {days.map((day) => {
-              const inMonth = isSameMonth(day, monthCursor);
-              const sel = isSameDay(day, selected);
-              const td = isToday(day);
-              return (
-                <button
-                  key={toLocalDateKey(day)}
-                  type="button"
-                  onClick={() => pickDay(day)}
-                  className={cn(
-                    "aspect-square max-h-11 min-h-[2.75rem] sm:max-h-10 sm:min-h-0 rounded-lg text-sm transition-colors touch-manipulation",
-                    !inMonth && "text-[color:var(--foreground-muted)] opacity-55",
-                    inMonth && "text-[color:var(--foreground)]",
-                    "hover:bg-[color:var(--surface-2)]",
-                    sel &&
-                      "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] font-semibold hover:opacity-90",
-                    td && !sel && "ring-1 ring-inset ring-[color:var(--primary)]/45",
-                  )}
-                >
-                  {format(day, "d")}
-                </button>
-              );
-            })}
-          </div>
-          <div className="divider my-3" />
-          <button type="button" className="btn btn-primary w-full" onClick={goToday}>
-            {t.common.today}
-          </button>
-        </div>
+        </>
       )}
     </div>
   );

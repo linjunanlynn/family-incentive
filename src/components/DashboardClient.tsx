@@ -15,7 +15,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { BarChart2, LineChart as LineChartIcon, PlusCircle, Sparkles, Trophy } from "lucide-react";
+import { BarChart2, LineChart as LineChartIcon, PlusCircle, Sparkles, Star, Trophy } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { addDays, formatDate, parseLocalDateKey, toLocalDateKey } from "@/lib/utils";
 import { DashboardDateNav } from "@/components/DashboardDateNav";
@@ -122,6 +122,9 @@ export function DashboardClient(props: Props) {
         : dailyChartData.map((d) => ({ label: d.label, net: d.net })),
     [useMonthlyBars, monthlyChartData, dailyChartData],
   );
+  const heroTheme = props.child.id.toLowerCase().includes("aimee")
+    ? "ice-princess"
+    : "kaiju";
 
   useLayoutEffect(() => {
     const el = categoryPanelRef.current;
@@ -197,7 +200,7 @@ export function DashboardClient(props: Props) {
             ))}
           </div>
 
-          <div className="flex justify-center sm:justify-start w-full sm:w-auto overflow-x-auto pb-0.5">
+          <div className="flex justify-center sm:justify-start w-full sm:w-auto overflow-x-auto sm:overflow-visible pb-0.5">
             <DashboardDateNav
               selectedDateKey={props.selectedDateKey}
               onNavigate={(d) => navigate(props.view, d)}
@@ -214,6 +217,7 @@ export function DashboardClient(props: Props) {
           label={t.dashboard.currentPoints}
           value={props.currentPoints}
           accent={props.child.color}
+          heroTheme={heroTheme}
           highlight
         />
         <KpiCard
@@ -365,7 +369,10 @@ export function DashboardClient(props: Props) {
                         className="inline-flex items-center gap-1 rounded-md bg-[color:var(--surface-2)] px-1.5 py-0.5 text-[10px] sm:text-xs tabular-nums text-[color:var(--foreground-muted)]"
                         title={`${t.common.stars} / ${t.common.triangles}`}
                       >
-                        <span className="text-[color:var(--positive)] font-semibold">+{c.positive}</span>
+                        <span className="inline-flex items-center gap-0.5 text-[color:var(--positive)] font-semibold">
+                          <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-500" strokeWidth={1.5} aria-hidden />
+                          +{c.positive}
+                        </span>
                         <span className="opacity-50">·</span>
                         <span className="text-[color:var(--negative)] font-semibold">
                           {c.negative > 0 ? `−${c.negative}` : "0"}
@@ -373,7 +380,7 @@ export function DashboardClient(props: Props) {
                       </div>
                       <div
                         className={cn(
-                          "min-w-[2.75rem] rounded-lg border px-2 py-0.5 text-center text-sm font-bold tabular-nums leading-none tracking-tight",
+                          "inline-flex min-w-[2.75rem] items-center justify-center gap-0.5 rounded-lg border px-1.5 py-1 text-center text-sm font-bold tabular-nums leading-none tracking-tight",
                           c.net > 0 &&
                             "border-[color:color-mix(in_srgb,var(--positive)_45%,var(--border))] bg-[color:color-mix(in_srgb,var(--positive)_14%,transparent)] text-[color:var(--positive)]",
                           c.net < 0 &&
@@ -384,8 +391,20 @@ export function DashboardClient(props: Props) {
                         title={t.common.net}
                         aria-label={`${t.common.net} ${c.net >= 0 ? "+" : ""}${c.net}`}
                       >
-                        {c.net > 0 ? "+" : ""}
-                        {c.net}
+                        <Star
+                          className={cn(
+                            "h-3.5 w-3.5 shrink-0",
+                            c.net > 0 && "fill-amber-400 text-amber-600",
+                            c.net < 0 && "fill-red-100 text-red-400",
+                            c.net === 0 && "fill-[color:var(--surface-2)] text-[color:var(--foreground-muted)]",
+                          )}
+                          strokeWidth={1.5}
+                          aria-hidden
+                        />
+                        <span>
+                          {c.net > 0 ? "+" : ""}
+                          {c.net}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -474,12 +493,55 @@ export function DashboardClient(props: Props) {
   );
 }
 
+function KpiStar({
+  value,
+  accent,
+  size,
+}: {
+  value: number;
+  accent?: string;
+  size: "hero" | "md";
+}) {
+  const showPlus = value > 0;
+  const starClass =
+    value < 0
+      ? "fill-red-100 text-red-400"
+      : value === 0
+        ? "fill-amber-100/80 text-amber-600/70"
+        : "fill-amber-400 text-amber-500";
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <Star
+        className={cn(
+          "shrink-0 drop-shadow-sm",
+          size === "hero" ? "h-9 w-9 sm:h-10 sm:w-10" : "h-6 w-6 sm:h-7 sm:w-7",
+          starClass,
+        )}
+        strokeWidth={1.5}
+        aria-hidden
+      />
+      <span
+        className={cn(
+          "font-bold tabular-nums tracking-tight",
+          size === "hero" ? "text-3xl sm:text-4xl" : "text-2xl sm:text-[1.75rem]",
+          !accent && "text-[color:var(--foreground)]",
+        )}
+        style={accent ? { color: accent } : undefined}
+      >
+        {showPlus ? "+" : ""}
+        {value}
+      </span>
+    </div>
+  );
+}
+
 function KpiCard({
   icon,
   label,
   value,
   subtitle,
   accent,
+  heroTheme,
   highlight,
 }: {
   icon: React.ReactNode;
@@ -487,38 +549,135 @@ function KpiCard({
   value: number;
   subtitle?: string;
   accent?: string;
+  heroTheme?: "kaiju" | "ice-princess";
   highlight?: boolean;
 }) {
+  if (highlight && accent) {
+    return (
+      <div
+        className={cn(
+          "relative flex min-h-[118px] flex-col justify-between overflow-hidden rounded-[var(--radius)] border-2 p-5",
+          "border-[color:color-mix(in_srgb,var(--primary)_35%,var(--border))]",
+          "bg-[color:var(--surface)] shadow-[0_14px_40px_-14px_color-mix(in_srgb,var(--primary)_45%,transparent),0_0_0_1px_color-mix(in_srgb,var(--primary)_12%,transparent)]",
+        )}
+        style={{
+          backgroundImage: [
+            heroTheme === "ice-princess"
+              ? "linear-gradient(145deg, var(--surface) 0%, var(--surface) 100%)"
+              : `linear-gradient(145deg, ${accent}18 0%, color-mix(in srgb, #ecfdf5 45%, var(--surface)) 52%, var(--surface) 100%)`,
+            heroTheme === "ice-princess"
+              ? "radial-gradient(ellipse 70% 62% at 96% 8%, color-mix(in srgb, #7dd3fc 22%, transparent), transparent 58%)"
+              : "radial-gradient(ellipse 76% 66% at 96% 12%, color-mix(in srgb, #22c55e 18%, transparent), transparent 58%)",
+            "radial-gradient(circle at 10% 92%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 46%)",
+          ].join(", "),
+        }}
+      >
+        <ChildHeroBackdrop theme={heroTheme ?? "kaiju"} accent={accent} />
+        <div
+          className="pointer-events-none absolute inset-0 z-[1]"
+          style={{
+            background:
+              heroTheme === "ice-princess"
+                ? "linear-gradient(100deg, color-mix(in srgb, #fbcfe8 42%, var(--surface)) 0%, color-mix(in srgb, #f9a8d4 24%, var(--surface)) 38%, color-mix(in srgb, #fbcfe8 10%, transparent) 66%, transparent 100%)"
+                : "linear-gradient(100deg, color-mix(in srgb, #bfdbfe 42%, var(--surface)) 0%, color-mix(in srgb, #93c5fd 24%, var(--surface)) 36%, color-mix(in srgb, #60a5fa 10%, transparent) 64%, transparent 100%)",
+          }}
+          aria-hidden
+        />
+        <Star
+          className="pointer-events-none absolute right-4 top-4 z-[2] h-4 w-4 fill-amber-300/45 text-amber-500/50 rotate-[18deg]"
+          strokeWidth={1}
+          aria-hidden
+        />
+        <Star
+          className="pointer-events-none absolute bottom-10 left-2 z-[2] h-4 w-4 fill-amber-200/40 text-amber-400/50 -rotate-12"
+          strokeWidth={1}
+          aria-hidden
+        />
+        <Star
+          className="pointer-events-none absolute right-14 top-12 z-[2] h-3 w-3 fill-amber-200/35 text-amber-400/40 rotate-6"
+          strokeWidth={1}
+          aria-hidden
+        />
+        <div className="relative z-[3] flex items-center gap-2 text-xs font-medium text-[color:var(--foreground-muted)]">
+          <span className="inline-flex items-center justify-center rounded-lg bg-amber-100/90 p-1 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+          </span>
+          {label}
+        </div>
+        <div className="relative z-[3] mt-1 flex flex-wrap items-end gap-2">
+          <KpiStar value={value} accent={accent} size="hero" />
+          {subtitle && (
+            <div className="max-w-full text-xs leading-snug text-[color:var(--foreground-muted)]">{subtitle}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        "card p-4 flex flex-col justify-between min-h-[100px]",
-        highlight && "relative overflow-hidden",
-      )}
-      style={
-        highlight && accent
-          ? {
-              background: `linear-gradient(135deg, ${accent}15 0%, transparent 80%)`,
-            }
-          : undefined
-      }
-    >
+    <div className="card relative flex min-h-[100px] flex-col justify-between overflow-hidden p-4">
       <div className="flex items-center gap-2 text-xs text-[color:var(--foreground-muted)]">
         {icon}
         {label}
       </div>
-      <div className="flex items-baseline gap-2">
-        <div
-          className="text-2xl font-semibold"
-          style={accent && highlight ? { color: accent } : undefined}
-        >
-          {value > 0 ? "+" : ""}
-          {value}
-        </div>
-        {subtitle && (
-          <div className="text-xs text-[color:var(--foreground-muted)]">{subtitle}</div>
-        )}
+      <div className="flex flex-wrap items-end gap-2">
+        <KpiStar value={value} accent={accent} size="md" />
+        {subtitle && <div className="text-xs text-[color:var(--foreground-muted)]">{subtitle}</div>}
       </div>
+    </div>
+  );
+}
+
+function ChildHeroBackdrop({
+  theme,
+  accent,
+}: {
+  theme: "kaiju" | "ice-princess";
+  accent: string;
+}) {
+  const posterUrl =
+    theme === "ice-princess"
+      ? "/posters/aimee-elsa-poster.jpg"
+      : "/posters/jimmy-godzilla-poster.jpg";
+
+  return (
+    <div className="pointer-events-none absolute inset-y-0 right-0 w-[56%] overflow-hidden" aria-hidden>
+      {/* Poster slab (cinema style): image bleeds outside card and fades into card color */}
+      <div
+        className="absolute -right-8 top-1/2 h-[134%] w-[122%] -translate-y-1/2 rounded-l-[2.4rem] blur-[0.45px] opacity-90"
+        style={{
+          backgroundImage: `url(${posterUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: theme === "ice-princess" ? "72% center" : "58% center",
+          boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${accent} 16%, transparent)`,
+          WebkitMaskImage:
+            "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.12) 14%, rgba(0,0,0,0.4) 28%, rgba(0,0,0,0.7) 46%, rgba(0,0,0,0.92) 66%, #000 100%)",
+          maskImage:
+            "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.12) 14%, rgba(0,0,0,0.4) 28%, rgba(0,0,0,0.7) 46%, rgba(0,0,0,0.92) 66%, #000 100%)",
+        }}
+      />
+
+      {/* color wash based on theme to avoid hard boundary */}
+      <div
+        className="absolute inset-y-0 inset-x-0"
+        style={{
+          background:
+            theme === "ice-princess"
+              ? "linear-gradient(90deg, color-mix(in srgb, var(--surface) 96%, transparent) 0%, color-mix(in srgb, #e0f2fe 40%, transparent) 38%, color-mix(in srgb, #bae6fd 20%, transparent) 62%, transparent 100%)"
+              : "linear-gradient(90deg, color-mix(in srgb, var(--surface) 96%, transparent) 0%, color-mix(in srgb, #dcfce7 34%, transparent) 38%, color-mix(in srgb, #86efac 20%, transparent) 62%, transparent 100%)",
+        }}
+      />
+
+      {/* right-side bloom to mimic poster glow */}
+      <div
+        className="absolute -right-8 top-1/2 h-44 w-44 -translate-y-1/2 rounded-full blur-2xl"
+        style={{
+          background:
+            theme === "ice-princess"
+              ? "color-mix(in srgb, #7dd3fc 30%, transparent)"
+              : `color-mix(in srgb, ${accent} 26%, transparent)`,
+        }}
+      />
     </div>
   );
 }

@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import type { Dict } from "@/i18n/dictionaries";
-import type { Locale } from "@/i18n/dictionaries";
 import type { AccountKind } from "@/auth/jwt";
+import { useI18n } from "@/i18n/I18nProvider";
 import {
   createUserAccountAction,
   deleteUserAccountAction,
@@ -46,18 +46,15 @@ type Row = {
 };
 
 export function AccountsAdmin({
-  t,
-  locale,
   accounts,
   members,
   children,
 }: {
-  t: Dict;
-  locale: Locale;
   accounts: Row[];
   members: { id: string; nameZh: string; nameEn: string; userAccount: { id: string } | null }[];
   children: { id: string; nameZh: string; nameEn: string; userAccount: { id: string } | null }[];
 }) {
+  const { t, locale, pick } = useI18n();
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [username, setUsername] = useState("");
@@ -65,8 +62,6 @@ export function AccountsAdmin({
   const [kind, setKind] = useState<AccountKind>("parent");
   const [linkMemberId, setLinkMemberId] = useState("");
   const [linkChildId, setLinkChildId] = useState("");
-
-  const pick = (o: { nameZh: string; nameEn: string }) => (locale === "zh" ? o.nameZh : o.nameEn);
 
   function kindLabel(k: string) {
     if (k === "parent_admin") return t.auth.kindAdmin;
@@ -180,7 +175,7 @@ export function AccountsAdmin({
                 </td>
                 <td className="p-3">
                   <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-1">
-                  <ResetPwd id={a.id} t={t} onDone={() => router.refresh()} />
+                  <ResetPwd id={a.id} onDone={() => router.refresh()} />
                   <button
                     type="button"
                     className="btn btn-ghost text-xs justify-center min-h-10"
@@ -218,7 +213,8 @@ export function AccountsAdmin({
   );
 }
 
-function ResetPwd({ id, t, onDone }: { id: string; t: Dict; onDone: () => void }) {
+function ResetPwd({ id, onDone }: { id: string; onDone: () => void }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [pwd, setPwd] = useState("");
   const [, startTransition] = useTransition();

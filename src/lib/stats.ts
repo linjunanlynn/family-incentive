@@ -154,13 +154,59 @@ export async function getMonthlySeries(childId: string, year: number) {
   return months;
 }
 
-/** All-time net points balance for a child (current points). */
-export async function getCurrentPoints(childId: string): Promise<number> {
+/** All-time net points balance for a child, IGNORING any redemption spending. */
+export async function getEarnedPoints(childId: string): Promise<number> {
   const agg = await prisma.logEntry.aggregate({
     where: { childId },
     _sum: { points: true },
   });
   return agg._sum.points ?? 0;
+}
+
+/** Sum of points already spent (status = approved or fulfilled). */
+export async function getSpentPoints(childId: string): Promise<number> {
+  const agg = await prisma.rewardRedemption.aggregate({
+    where: { childId, status: { in: ["approved", "fulfilled"] } },
+    _sum: { costPoints: true },
+  });
+  return agg._sum.costPoints ?? 0;
+}
+
+/** Sum of points reserved by pending requests (not yet deducted, but not available either). */
+export async function getPendingSpendPoints(childId: string): Promise<number> {
+  const agg = await prisma.rewardRedemption.aggregate({
+    where: { childId, status: "pending" },
+    _sum: { costPoints: true },
+  });
+  return agg._sum.costPoints ?? 0;
+}
+
+/**
+ * Spendable balance = earned − approved/fulfilled spend.
+ * This is what we show as "current points" everywhere (overview + reward shop),
+ * because once a parent approves a reward those stars are gone.
+ */
+export async function getCurrentPoints(childId: string): Promise<number> {
+  const [earned, spent] = await Promise.all([
+    getEarnedPoints(childId),
+    getSpentPoints(childId),
+  ]);
+  return earned - spent;
+}
+
+/** Convenience: the full wallet snapshot (used by the reward shop hero). */
+export async function getWalletSnapshot(childId: string) {
+  const [earned, spent, pending] = await Promise.all([
+    getEarnedPoints(childId),
+    getSpentPoints(childId),
+    getPendingSpendPoints(childId),
+  ]);
+  return {
+    earned,
+    spent,
+    pending,
+    available: earned - spent,
+  };
 }
 
 /** Date range helpers exported for convenience. */

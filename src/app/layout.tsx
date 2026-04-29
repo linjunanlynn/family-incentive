@@ -87,7 +87,6 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col min-w-0 pt-[env(safe-area-inset-top,0px)]">
         <I18nProvider initialLocale={locale}>
           <TopBar
-            t={t}
             children_={childrenForBar}
             currentChildId={safeChildId}
             session={barSession}

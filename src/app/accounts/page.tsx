@@ -8,7 +8,7 @@ export default async function AccountsPage() {
   if (!(await assertAdmin())) {
     redirect("/");
   }
-  const { t, locale } = await getDict();
+  const { t } = await getDict();
 
   const [accounts, members, children] = await Promise.all([
     prisma.userAccount.findMany({
@@ -38,13 +38,7 @@ export default async function AccountsPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">{t.auth.accountsTitle}</h1>
-      <AccountsAdmin
-        t={t}
-        locale={locale}
-        accounts={accounts}
-        members={members}
-        children={children}
-      />
+      <AccountsAdmin accounts={accounts} members={members} children={children} />
     </div>
   );
 }

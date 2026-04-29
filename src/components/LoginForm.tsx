@@ -4,9 +4,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { loginAction } from "@/app/actions/auth";
-import type { Dict } from "@/i18n/dictionaries";
+import { useI18n } from "@/i18n/I18nProvider";
 
-export function LoginForm({ t }: { t: Dict }) {
+export function LoginForm() {
+  const { t } = useI18n();
   const router = useRouter();
   const sp = useSearchParams();
   const [username, setUsername] = useState("");

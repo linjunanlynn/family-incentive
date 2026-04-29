@@ -16,31 +16,35 @@ model Member {
   id        String   @id @default(cuid())
   nameZh    String
   nameEn    String
-  role      String   // "parent" | "grandparent" | "other"
+  role      String // "parent" | "grandparent" | "other"
   emoji     String   @default("👤")
   color     String   @default("#6366f1")
-  pinHash   String?  // optional 4-digit PIN; null means no PIN protection
+  pinHash   String? // optional 4-digit PIN; null means no PIN protection
   createdAt DateTime @default(now())
 
-  logs        LogEntry[]
-  userAccount UserAccount?
+  logs               LogEntry[]
+  userAccount        UserAccount?
+  redemptionRequests RewardRedemption[] @relation("RedemptionRequester")
+  redemptionReviews  RewardRedemption[] @relation("RedemptionReviewer")
 }
 
 // ---------- Children ----------
 model Child {
-  id          String   @id @default(cuid())
-  nameZh      String
-  nameEn      String
-  emoji       String   @default("🧒")
-  color       String   @default("#3b82f6") // accent for charts
-  birthday    DateTime?
-  order       Int      @default(0)
-  archived    Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String    @id @default(cuid())
+  nameZh    String
+  nameEn    String
+  emoji     String    @default("🧒")
+  color     String    @default("#3b82f6") // accent for charts
+  birthday  DateTime?
+  order     Int       @default(0)
+  archived  Boolean   @default(false)
+  createdAt DateTime  @default(now())
 
   categories  Category[]
   logs        LogEntry[]
   userAccount UserAccount?
+  rewards     Reward[]
+  redemptions RewardRedemption[]
 }
 
 // ---------- Login accounts (parents / children) ----------
@@ -48,7 +52,9 @@ model UserAccount {
   id           String   @id @default(cuid())
   username     String   @unique
   passwordHash String
-  /** parent_admin = manage behaviors + accounts; parent = score only; child = read-only overview */
+  /**
+   * parent_admin = manage behaviors + accounts; parent = score only; child = read-only overview
+   */
   accountKind  String
   memberId     String?  @unique
   member       Member?  @relation(fields: [memberId], references: [id], onDelete: Cascade)
@@ -66,7 +72,7 @@ model Category {
   id        String   @id @default(cuid())
   childId   String
   child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
-  key       String   // stable slug like "resilience"
+  key       String // stable slug like "resilience"
   nameZh    String
   nameEn    String
   emoji     String   @default("✨")
@@ -76,8 +82,8 @@ model Category {
 
   behaviors Behavior[]
 
-  @@index([childId])
   @@unique([childId, key])
+  @@index([childId])
 }
 
 // ---------- Specific behaviors (positive ☆ or negative △) ----------
@@ -85,7 +91,7 @@ model Behavior {
   id         String   @id @default(cuid())
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  type       String   // "positive" | "negative"
+  type       String // "positive" | "negative"
   nameZh     String
   nameEn     String
   // Points are stored as positive number; sign is implied by type.
@@ -95,7 +101,7 @@ model Behavior {
   archived   Boolean  @default(false)
   createdAt  DateTime @default(now())
 
-  logs       LogEntry[]
+  logs LogEntry[]
 
   @@index([categoryId])
 }
@@ -108,8 +114,8 @@ model LogEntry {
   behaviorId  String
   behavior    Behavior @relation(fields: [behaviorId], references: [id], onDelete: Cascade)
   // Denormalized type/points snapshot to keep history stable even if behavior changes later.
-  type        String   // "positive" | "negative"
-  points      Int      // signed value already applied (positive or negative)
+  type        String // "positive" | "negative"
+  points      Int // signed value already applied (positive or negative)
   occurrences Int      @default(1)
   date        DateTime // local-day boundary (stored as midnight UTC for that local date)
   notes       String?
@@ -120,4 +126,78 @@ model LogEntry {
 
   @@index([childId, date])
   @@index([behaviorId])
+}
+
+// ---------- Reward catalog (things kids can spend points on) ----------
+// Scope: childId == null  → available to every child (shared catalog).
+//        childId == "X"   → only that child can redeem this reward.
+model Reward {
+  id           String   @id @default(cuid())
+  childId      String?
+  child        Child?   @relation(fields: [childId], references: [id], onDelete: Cascade)
+  nameZh       String
+  nameEn       String
+  descZh       String?
+  descEn       String?
+  emoji        String   @default("🎁")
+  /**
+   * Cost in points. Always positive integer.
+   */
+  costPoints   Int
+  /**
+   * Logical bucket the kid sees as a tab. e.g. treat | privilege | outing | toy | family | learning
+   */
+  category     String   @default("treat")
+  /**
+   * null = unlimited; integer = remaining stock that decrements on approve.
+   */
+  stock        Int?
+  /**
+   * Optional cooldown so the same reward can't be redeemed every day.
+   */
+  cooldownDays Int?
+  order        Int      @default(0)
+  archived     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  redemptions RewardRedemption[]
+
+  @@index([childId])
+  @@index([category])
+}
+
+// ---------- Redemption events (the "wallet ledger" for spending) ----------
+// status flow: pending → (approved | rejected | cancelled)
+//              approved → fulfilled
+model RewardRedemption {
+  id            String    @id @default(cuid())
+  rewardId      String
+  reward        Reward    @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  childId       String
+  child         Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  /**
+   * Snapshot of cost at the moment of request, so later admin edits don't change history.
+   */
+  costPoints    Int
+  status        String    @default("pending") // pending | approved | fulfilled | rejected | cancelled
+  notes         String?
+  /**
+   * Member who requested. null = the child themselves requested.
+   */
+  requestedById String?
+  requestedBy   Member?   @relation("RedemptionRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  /**
+   * Member who approved/rejected/fulfilled.
+   */
+  reviewedById  String?
+  reviewedBy    Member?   @relation("RedemptionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt    DateTime?
+  fulfilledAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([childId, status])
+  @@index([rewardId])
+  @@index([status, createdAt])
 }
