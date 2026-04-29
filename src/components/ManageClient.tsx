@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Pencil, Trash2, Plus, Archive, ArchiveRestore, Check, X } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { PointsGlyph } from "@/components/PointsGlyph";
 import { cn } from "@/lib/utils";
 import {
   archiveBehaviorAction,
@@ -241,7 +242,7 @@ function BehaviorRow({ behavior }: { behavior: Behavior }) {
             : "bg-[color:color-mix(in_srgb,var(--negative)_20%,transparent)] text-[color:var(--negative)]",
         )}
       >
-        {behavior.type === "positive" ? "☆" : "△"}
+        <PointsGlyph type={behavior.type} size={14} />
       </span>
       <div className="flex-1 min-w-0 basis-[min(100%,14rem)]">
         <div className="break-words sm:truncate">{pick(behavior)}</div>

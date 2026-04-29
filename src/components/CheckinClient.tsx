@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Trash2, Undo2, MessageSquarePlus, X, Check } from "lucide-react";
+import { Trash2, Undo2, MessageSquarePlus, X, Check } from "lucide-react";
 import { OverviewCheckinNav } from "@/components/OverviewCheckinNav";
+import { DashboardDateNav } from "@/components/DashboardDateNav";
+import { PointsGlyph } from "@/components/PointsGlyph";
 import { useI18n } from "@/i18n/I18nProvider";
 import { addDays, cn, formatDate, toLocalDateKey } from "@/lib/utils";
 import { deleteLogAction, logBehaviorAction } from "@/app/actions/logs";
@@ -97,6 +99,28 @@ export function CheckinClient({
     [todayLogs],
   );
 
+  /**
+   * "Star cracks" animation trigger — when a new negative log is added we flash
+   * the matching tile + the summary card briefly. Tracks the most recent
+   * negative log id so we can animate just that one.
+   */
+  const lastNegLogId = useMemo(
+    () => todayLogs.find((l) => l.type === "negative")?.id ?? null,
+    [todayLogs],
+  );
+  const [flashNegLogId, setFlashNegLogId] = useState<string | null>(null);
+  const seenNegRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (lastNegLogId && lastNegLogId !== seenNegRef.current) {
+      seenNegRef.current = lastNegLogId;
+      setFlashNegLogId(lastNegLogId);
+      const tid = setTimeout(() => setFlashNegLogId(null), 700);
+      return () => clearTimeout(tid);
+    }
+    if (!lastNegLogId) seenNegRef.current = null;
+  }, [lastNegLogId]);
+  const flashNegSummary = flashNegLogId !== null;
+
   function shiftDate(direction: -1 | 1) {
     const d = addDays(new Date(dateKey), direction);
     const params = new URLSearchParams(sp.toString());
@@ -128,7 +152,8 @@ export function CheckinClient({
       });
       if (res.ok) {
         const sign = res.points >= 0 ? "+" : "";
-        toast.success(`${b.type === "positive" ? "☆" : "△"} ${pick(b)} · ${sign}${res.points}`);
+        const glyph = b.type === "positive" ? "★" : "✦";
+        toast.success(`${glyph} ${pick(b)} · ${sign}${res.points} ${t.common.points}`);
         router.refresh();
       } else if (res.error === "already_logged") {
         toast.error(t.checkin.alreadyLogged);
@@ -194,9 +219,9 @@ export function CheckinClient({
     <div className="space-y-5">
       <OverviewCheckinNav mode="checkin" dateKey={dateKey} showDailyCheckin={showDailyCheckin} />
 
-      {/* Header bar */}
-      <section className="card p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="flex items-center gap-3 min-w-0">
+      {/* Header bar: profile left, date nav right (single row at all sizes) */}
+      <section className="card p-3 sm:p-4 flex flex-row items-center justify-between gap-3 sm:gap-4 min-w-0">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <div
             className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center shrink-0"
             style={{ background: `${child.color}22`, color: child.color }}
@@ -205,59 +230,42 @@ export function CheckinClient({
           </div>
           <div className="min-w-0">
             <div className="text-lg font-semibold truncate">{pick(child)}</div>
-            <div className="text-sm text-[color:var(--foreground-muted)]">{t.checkin.title}</div>
+            <div className="text-sm text-[color:var(--foreground-muted)] truncate">{t.checkin.title}</div>
           </div>
         </div>
 
-        <div className="hidden sm:block flex-1 min-w-2" />
-
-        <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1 w-full sm:w-auto">
-          <button
-            type="button"
-            className="btn btn-ghost btn-icon shrink-0"
-            onClick={() => shiftDate(-1)}
-            aria-label={`${t.common.previous} · ${t.checkin.title}`}
-          >
-            <ChevronLeft className="w-5 h-5 sm:w-4 sm:h-4" />
-          </button>
-          <input
-            type="date"
-            value={dateKey}
-            onChange={(e) => {
-              if (e.target.value) gotoDate(new Date(`${e.target.value}T00:00:00`));
-            }}
-            className="input max-w-full min-w-0 flex-1 sm:flex-initial sm:max-w-[180px] text-center"
+        <div className="flex min-w-0 justify-end shrink-0">
+          <DashboardDateNav
+            className="w-auto"
+            selectedDateKey={dateKey}
+            onNavigate={gotoDate}
+            onShift={shiftDate}
           />
-          <button
-            type="button"
-            className="btn btn-ghost btn-icon shrink-0"
-            onClick={() => shiftDate(1)}
-            aria-label={`${t.common.next} · ${t.checkin.title}`}
-          >
-            <ChevronRight className="w-5 h-5 sm:w-4 sm:h-4" />
-          </button>
-          <button type="button" className="btn btn-ghost shrink-0 min-h-11" onClick={() => gotoDate(new Date())}>
-            {t.common.today}
-          </button>
         </div>
       </section>
 
-      {/* Today summary */}
+      {/* Today summary: 今日得分 → 正向 → 负向 */}
       <section className="grid grid-cols-3 gap-3">
-        <div className="card p-3 text-center">
-          <div className="text-xs text-[color:var(--foreground-muted)]">{t.common.stars}</div>
-          <div className="text-xl font-semibold text-[color:var(--positive)]">+{positiveSum}</div>
-        </div>
-        <div className="card p-3 text-center">
-          <div className="text-xs text-[color:var(--foreground-muted)]">{t.common.triangles}</div>
-          <div className="text-xl font-semibold text-[color:var(--negative)]">−{negativeSum}</div>
-        </div>
         <div className="card p-3 text-center" style={{ background: `linear-gradient(135deg, ${child.color}15, transparent)` }}>
           <div className="text-xs text-[color:var(--foreground-muted)]">{t.checkin.todayPoints}</div>
           <div className="text-xl font-semibold" style={{ color: child.color }}>
             {todayPoints > 0 ? "+" : ""}
             {todayPoints}
           </div>
+        </div>
+        <div className="card p-3 text-center">
+          <div className="inline-flex items-center justify-center gap-1 text-xs text-[color:var(--foreground-muted)]">
+            <PointsGlyph type="positive" size={14} />
+            <span>{t.common.stars}</span>
+          </div>
+          <div className="text-xl font-semibold text-[color:var(--positive)]">+{positiveSum}</div>
+        </div>
+        <div className="card p-3 text-center">
+          <div className="inline-flex items-center justify-center gap-1 text-xs text-[color:var(--foreground-muted)]">
+            <PointsGlyph type="negative" size={14} animate={flashNegSummary} />
+            <span>{t.common.triangles}</span>
+          </div>
+          <div className="text-xl font-semibold text-[color:var(--negative)]">−{negativeSum}</div>
         </div>
       </section>
 
@@ -323,6 +331,7 @@ export function CheckinClient({
                   logByBehaviorId={logByBehaviorId}
                   onUndoLog={delLog}
                   canScore={canScore}
+                  flashNegLogId={flashNegLogId}
                 />
               )}
               {negatives.length > 0 && (
@@ -334,6 +343,7 @@ export function CheckinClient({
                     logByBehaviorId={logByBehaviorId}
                     onUndoLog={delLog}
                     canScore={canScore}
+                    flashNegLogId={flashNegLogId}
                   />
                 </div>
               )}
@@ -357,8 +367,11 @@ export function CheckinClient({
           {todayLogs.map((l) => (
             <li key={l.id} className="py-2.5 flex items-center gap-3">
               <span className={cn("chip", l.type === "positive" ? "chip-positive" : "chip-negative")}>
-                {l.type === "positive" ? "☆" : "△"} {l.points >= 0 ? "+" : ""}
-                {l.points * l.occurrences}
+                <PointsGlyph type={l.type} size={14} />
+                <span>
+                  {l.points >= 0 ? "+" : ""}
+                  {l.points * l.occurrences}
+                </span>
               </span>
               <div className="flex-1 min-w-0">
                 <div className="text-sm truncate">
@@ -412,14 +425,15 @@ export function CheckinClient({
             </div>
             <div
               className={cn(
-                "rounded-xl p-3 text-sm mb-3",
+                "rounded-xl p-3 text-sm mb-3 inline-flex items-center gap-2",
                 noteFor.type === "positive" ? "chip-positive" : "chip-negative",
               )}
             >
-              {noteFor.type === "positive" ? "☆ " : "△ "}
-              {pick(noteFor)} ·{" "}
-              {noteFor.type === "positive" ? "+" : "-"}
-              {noteFor.points}
+              <PointsGlyph type={noteFor.type} size={16} />
+              <span>
+                {pick(noteFor)} · {noteFor.type === "positive" ? "+" : "-"}
+                {noteFor.points} {t.common.points}
+              </span>
             </div>
             <textarea
               value={noteText}
@@ -449,6 +463,7 @@ function BehaviorGrid({
   logByBehaviorId,
   onUndoLog,
   canScore,
+  flashNegLogId,
 }: {
   items: Behavior[];
   onTap: (b: Behavior, withNote?: boolean) => void;
@@ -456,6 +471,7 @@ function BehaviorGrid({
   logByBehaviorId: Record<string, Log>;
   onUndoLog: (logId: string) => void;
   canScore: boolean;
+  flashNegLogId?: string | null;
 }) {
   const { pick, t, locale } = useI18n();
   return (
@@ -465,6 +481,7 @@ function BehaviorGrid({
         const done = !!log;
         const pts = log ? log.points * log.occurrences : 0;
         const recordedPositive = done && log.type === "positive";
+        const flashThis = !!log && log.type === "negative" && log.id === flashNegLogId;
 
         return (
           <div
@@ -511,9 +528,14 @@ function BehaviorGrid({
                 done && !recordedPositive && "bg-[color:color-mix(in_srgb,var(--negative)_22%,transparent)] text-[color:var(--negative)]",
                 !done && type === "positive" && "bg-[color:color-mix(in_srgb,var(--positive)_20%,transparent)] text-[color:var(--positive)]",
                 !done && type === "negative" && "bg-[color:color-mix(in_srgb,var(--negative)_20%,transparent)] text-[color:var(--negative)]",
+                flashThis && "animate-crack",
               )}
             >
-              {done ? <Check className="w-4 h-4" strokeWidth={2.5} /> : type === "positive" ? "☆" : "△"}
+              {done ? (
+                <Check className="w-4 h-4" strokeWidth={2.5} />
+              ) : (
+                <PointsGlyph type={type} size={16} />
+              )}
             </span>
             <div className={cn("flex-1 min-w-0", canScore && done && "pr-8")}>
               <div className="leading-snug">{pick(b)}</div>
@@ -527,7 +549,7 @@ function BehaviorGrid({
                         : "border-[color:color-mix(in_srgb,var(--negative)_40%,var(--border))] bg-[color:color-mix(in_srgb,var(--negative)_12%,transparent)] text-[color:var(--negative)]",
                     )}
                   >
-                    <span aria-hidden>{log.type === "positive" ? "☆" : "△"}</span>
+                    <PointsGlyph type={log.type} size={14} animate={flashThis} />
                     <span>{log.type === "positive" ? t.checkin.labelPositiveScore : t.checkin.labelNegativeScore}</span>
                     <span className="opacity-95">
                       {pts > 0 ? "+" : ""}
@@ -554,7 +576,7 @@ function BehaviorGrid({
               ) : (
                 <div className="text-xs text-[color:var(--foreground-muted)] mt-1">
                   {type === "positive" ? "+" : "-"}
-                  {b.points} pts
+                  {b.points} {t.common.points}
                 </div>
               )}
             </div>

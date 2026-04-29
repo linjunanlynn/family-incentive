@@ -22,9 +22,11 @@ type Props = {
   selectedDateKey: string;
   onNavigate: (d: Date) => void;
   onShift: (dir: -1 | 1) => void;
+  /** Root wrapper; default includes w-full for mobile stretch. */
+  className?: string;
 };
 
-export function DashboardDateNav({ selectedDateKey, onNavigate, onShift }: Props) {
+export function DashboardDateNav({ selectedDateKey, onNavigate, onShift, className }: Props) {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -154,7 +156,10 @@ export function DashboardDateNav({ selectedDateKey, onNavigate, onShift }: Props
   );
 
   return (
-    <div ref={wrapRef} className="relative flex items-center gap-1">
+    <div
+      ref={wrapRef}
+      className={cn("relative flex min-w-0 items-center gap-1", className ?? "w-full")}
+    >
       <button
         type="button"
         className="btn btn-ghost btn-icon"
@@ -168,14 +173,19 @@ export function DashboardDateNav({ selectedDateKey, onNavigate, onShift }: Props
       </button>
       <button
         type="button"
-        className="btn btn-ghost gap-1.5"
+        className={cn(
+          "inline-flex min-h-11 sm:min-h-9 flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-[color:var(--border)]",
+          "bg-[color:var(--surface)] px-3 text-sm tabular-nums text-[color:var(--foreground)] shadow-sm",
+          "hover:bg-[color:var(--surface-2)] active:scale-[0.99] transition touch-manipulation min-w-0",
+          open && "ring-2 ring-[color:var(--primary)]/35 border-[color:var(--primary)]/40",
+        )}
         onClick={() => (open ? closePicker() : openPicker())}
         aria-expanded={open}
         aria-haspopup="dialog"
         title={`${t.checkin.pickDate} · ${selectedDateKey}`}
       >
-        <CalendarDays className="w-4 h-4 shrink-0" />
-        <span className="ml-1 max-w-[7.5rem] sm:max-w-[10rem] truncate tabular-nums">{anchorLabel}</span>
+        <span className="min-w-0 flex-1 truncate text-center sm:max-w-[11rem]">{anchorLabel}</span>
+        <CalendarDays className="w-4 h-4 shrink-0 text-[color:var(--foreground-muted)]" aria-hidden />
       </button>
       <button
         type="button"

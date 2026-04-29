@@ -92,8 +92,9 @@ export function TopBar({
   const childStrip = (
     <div
       className={cn(
-        "flex items-center gap-1 card-2 rounded-full p-1 min-w-0 overflow-x-auto overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch]",
-        "w-full md:w-auto md:max-w-[min(100%,28rem)] md:ml-1",
+        "flex items-center gap-1 min-w-0 overflow-x-auto overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch]",
+        /* Mobile: sits in top bar between logo and actions — grow + scroll, not a second row */
+        "w-full max-w-full md:w-auto md:max-w-[min(100%,28rem)] md:ml-1",
       )}
     >
       {children_.map((c) => {
@@ -105,10 +106,10 @@ export function TopBar({
             onClick={() => selectChild(c.id)}
             disabled={isChild}
             className={cn(
-              "px-3 sm:px-3 min-h-10 sm:min-h-8 h-10 sm:h-8 rounded-full inline-flex items-center gap-1.5 text-sm transition-colors shrink-0 touch-manipulation whitespace-nowrap",
+              "px-3 sm:px-3 min-h-10 sm:min-h-8 h-10 sm:h-8 rounded-xl inline-flex items-center gap-1.5 text-sm transition-colors shrink-0 touch-manipulation whitespace-nowrap",
               active
                 ? "bg-[color:var(--surface)] shadow-sm text-[color:var(--foreground)]"
-                : "text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]",
+                : "text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] hover:bg-[color:color-mix(in_srgb,var(--foreground)_4%,transparent)]",
               isChild && "cursor-default opacity-90",
             )}
             style={active ? { boxShadow: `inset 0 0 0 2px ${c.color}33` } : undefined}
@@ -154,14 +155,14 @@ export function TopBar({
         aria-label={t.auth.userMenu}
         onClick={() => setMenuOpen((o) => !o)}
         className={cn(
-          "btn btn-ghost gap-1.5 max-w-[10rem] sm:max-w-[12rem]",
+          "btn btn-ghost min-w-0 gap-1 sm:gap-1.5 max-w-[min(42vw,9rem)] sm:max-w-[12rem]",
           menuOpen && "bg-[color:var(--surface-2)]",
         )}
       >
         <span className="text-lg shrink-0" aria-hidden>
           {session.kind === "child" ? "🧒" : "👤"}
         </span>
-        <span className="hidden sm:inline truncate text-sm text-[color:var(--foreground)] max-w-[6rem] md:max-w-[10rem]">
+        <span className="min-w-0 truncate text-left text-sm text-[color:var(--foreground)] max-w-[4.5rem] sm:max-w-[7rem] md:max-w-[10rem]">
           {locale === "zh" ? session.nameZh : session.nameEn}
         </span>
         <ChevronDown
@@ -236,16 +237,14 @@ export function TopBar({
   return (
     <header className="sticky top-0 z-30 bg-[color:var(--background)]/90 backdrop-blur-md border-b border-[color:var(--border)] supports-[backdrop-filter]:bg-[color:var(--background)]/75">
       <div className="max-w-7xl mx-auto px-2 sm:px-6">
-        {/* Narrow screens: logo + actions on row 1; child strip on row 2 (full width, scroll) */}
-        <div className="flex md:hidden flex-col gap-2 py-2 min-w-0">
-          <div className="flex items-center justify-between gap-2 min-w-0">
-            {brandLink}
-            <div className="flex items-center gap-1 shrink-0">
-              {langButton}
-              {sessionOrLogin}
-            </div>
+        {/* Narrow screens: one row — logo | child switcher (scroll) | lang + account */}
+        <div className="flex md:hidden items-center gap-2 py-2 min-w-0">
+          {brandLink}
+          {children_.length > 0 ? <div className="flex-1 min-w-0">{childStrip}</div> : null}
+          <div className="flex items-center gap-0.5 shrink-0">
+            {langButton}
+            {sessionOrLogin}
           </div>
-          {children_.length > 0 ? childStrip : null}
         </div>
 
         {/* md+: single bar */}

@@ -10,7 +10,16 @@
   --primary: #6366f1;
   --primary-foreground: #ffffff;
   --positive: #10b981;
-  --negative: #ef4444;
+  /**
+   * Negative tone — Plan C: cool slate to express "lost / dimmed" rather than
+   * harsh red punishment. Used by chips, tiles, summary cards.
+   */
+  --negative: #64748b;
+  /** Lighter slate for the broken-star outline body. */
+  --negative-soft: #94a3b8;
+  /** Saturated red kept ONLY for data viz (charts, heatmap) where contrast is
+   * needed. UI for kid-facing actions should use --negative. */
+  --negative-strong: #ef4444;
   --radius: 14px;
 }
 
@@ -25,6 +34,8 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-positive: var(--positive);
   --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-negative-strong: var(--negative-strong);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -40,7 +51,9 @@
     --primary: #818cf8;
     --primary-foreground: #0b0d12;
     --positive: #34d399;
-    --negative: #f87171;
+    --negative: #94a3b8;
+    --negative-soft: #cbd5e1;
+    --negative-strong: #f87171;
   }
 }
 
@@ -228,3 +241,13 @@ body {
   100% { transform: scale(1); }
 }
 .animate-pop { animation: pop 0.25s ease; }
+
+/* "Star cracks" — short shake + scale used when a new negative log is added. */
+@keyframes crack {
+  0%   { transform: scale(1) rotate(0deg); }
+  18%  { transform: scale(1.18) rotate(-6deg); }
+  38%  { transform: scale(0.94) rotate(5deg); }
+  60%  { transform: scale(1.05) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.animate-crack { animation: crack 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }

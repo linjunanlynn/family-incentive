@@ -20,6 +20,8 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { addDays, formatDate, parseLocalDateKey, toLocalDateKey } from "@/lib/utils";
 import { DashboardDateNav } from "@/components/DashboardDateNav";
 import { OverviewCheckinNav } from "@/components/OverviewCheckinNav";
+import { PointsGlyph } from "@/components/PointsGlyph";
+import { BrokenStar } from "@/components/icons/BrokenStar";
 import { cn } from "@/lib/utils";
 
 type DailyPoint = { dateKey: string; positive: number; negative: number; net: number };
@@ -87,6 +89,38 @@ export function DashboardClient(props: Props) {
     else if (props.view === "month") d.setMonth(d.getMonth() + direction);
     else d.setFullYear(d.getFullYear() + direction);
     navigate(props.view, d);
+  }
+
+  /** Week / month / year — `compact` sits beside the child name on narrow screens. */
+  function renderViewToggle(layout: "compact" | "default") {
+    const compact = layout === "compact";
+    return (
+      <div
+        className={cn(
+          "flex items-center shrink-0",
+          compact ? "gap-1" : "gap-1 justify-center sm:justify-start w-full sm:w-auto min-w-0",
+        )}
+      >
+        {(["week", "month", "year"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => navigate(v)}
+            className={cn(
+              "rounded-xl transition-colors touch-manipulation active:scale-[0.97]",
+              compact
+                ? "min-h-11 h-11 min-w-[2.75rem] px-3 text-sm font-semibold inline-flex items-center justify-center"
+                : "text-sm font-medium flex-1 sm:flex-initial px-3 min-h-11 sm:min-h-8 h-11 sm:h-8",
+              v === props.view
+                ? "bg-[color:var(--surface)] text-[color:var(--foreground)] shadow-sm"
+                : "text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] hover:bg-[color:color-mix(in_srgb,var(--foreground)_4%,transparent)]",
+            )}
+          >
+            {v === "week" ? t.common.week : v === "month" ? t.common.month : t.common.year}
+          </button>
+        ))}
+      </div>
+    );
   }
 
   const dailyChartData = useMemo(
@@ -161,53 +195,64 @@ export function DashboardClient(props: Props) {
         showDailyCheckin={props.showDailyCheckin}
       />
 
-      {/* Header */}
-      <section className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
-        <div className="flex items-center gap-3 min-w-0">
+      {/* Header: same card + gap-3 rhythm as KPI grid; mobile = strict 3-col grid + full-width date row */}
+      <section className="card p-3 sm:p-4 min-w-0">
+        {/* —— Mobile / tablet —— */}
+        <div className="grid grid-cols-[3rem_minmax(0,1fr)_max-content] gap-x-3 gap-y-3 items-center min-w-0 lg:hidden">
           <div
-            className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center shrink-0"
+            className="col-start-1 row-start-1 w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center shrink-0 justify-self-start"
             style={{ background: `${props.child.color}22`, color: props.child.color }}
           >
             {props.child.emoji}
           </div>
-          <div className="min-w-0">
-            <div className="text-lg sm:text-xl font-semibold flex flex-wrap items-center gap-2">
-              <span className="truncate">{pick(props.child)}</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[color:var(--surface-2)] text-[color:var(--foreground-muted)] shrink-0">
-                {props.view === "week"
-                  ? t.dashboard.titleWeek
-                  : props.view === "month"
-                    ? t.dashboard.titleMonth
-                    : t.dashboard.titleYear}
-              </span>
-            </div>
-            <div className="text-sm text-[color:var(--foreground-muted)] break-words">{props.rangeLabel}</div>
+          <div className="col-start-2 row-start-1 min-w-0 flex items-center gap-2">
+            <span className="truncate text-lg font-semibold">{pick(props.child)}</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-[color:var(--surface-2)] text-[color:var(--foreground-muted)] shrink-0 whitespace-nowrap">
+              {props.view === "week"
+                ? t.dashboard.titleWeek
+                : props.view === "month"
+                  ? t.dashboard.titleMonth
+                  : t.dashboard.titleYear}
+            </span>
+          </div>
+          <div className="col-start-3 row-start-1 shrink-0 justify-self-end self-center">
+            {renderViewToggle("compact")}
+          </div>
+          <div className="col-span-full row-start-2 min-w-0 w-full">
+            <DashboardDateNav
+              className="w-full"
+              selectedDateKey={props.selectedDateKey}
+              onNavigate={(d) => navigate(props.view, d)}
+              onShift={shift}
+            />
           </div>
         </div>
 
-        <div className="hidden lg:block flex-1 min-w-4" />
-
-        {/* View switcher + date (full width row on small screens for tap targets) */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center w-full lg:w-auto min-w-0">
-          <div className="card-2 rounded-full p-1 flex items-center justify-center sm:justify-start w-full sm:w-auto">
-            {(["week", "month", "year"] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => navigate(v)}
-                className={cn(
-                  "flex-1 sm:flex-initial px-3 min-h-11 sm:min-h-8 h-11 sm:h-8 rounded-full text-sm transition-colors touch-manipulation",
-                  v === props.view
-                    ? "bg-[color:var(--surface)] shadow-sm"
-                    : "text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)]",
-                )}
-              >
-                {v === "week" ? t.common.week : v === "month" ? t.common.month : t.common.year}
-              </button>
-            ))}
+        {/* —— Desktop —— */}
+        <div className="hidden lg:flex flex-row items-center justify-between gap-4 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div
+              className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center shrink-0"
+              style={{ background: `${props.child.color}22`, color: props.child.color }}
+            >
+              {props.child.emoji}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xl font-semibold flex flex-wrap items-center gap-2">
+                <span className="truncate">{pick(props.child)}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[color:var(--surface-2)] text-[color:var(--foreground-muted)] shrink-0">
+                  {props.view === "week"
+                    ? t.dashboard.titleWeek
+                    : props.view === "month"
+                      ? t.dashboard.titleMonth
+                      : t.dashboard.titleYear}
+                </span>
+              </div>
+              <div className="text-sm text-[color:var(--foreground-muted)] break-words mt-0.5">{props.rangeLabel}</div>
+            </div>
           </div>
-
-          <div className="flex justify-center sm:justify-start w-full sm:w-auto overflow-x-auto sm:overflow-visible pb-0.5">
+          <div className="flex flex-row items-center gap-2 shrink-0 min-w-0">
+            {renderViewToggle("default")}
             <DashboardDateNav
               selectedDateKey={props.selectedDateKey}
               onNavigate={(d) => navigate(props.view, d)}
@@ -239,7 +284,17 @@ export function DashboardClient(props: Props) {
                 : t.dashboard.thisYear
           }
           value={props.rangeStats.net}
-          subtitle={`☆ ${props.rangeStats.positive}  ·  △ ${props.rangeStats.negative}`}
+          subtitle={
+            <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className="inline-flex items-center gap-1">
+                <PointsGlyph type="positive" size={12} />+{props.rangeStats.positive}
+              </span>
+              <span className="opacity-50">·</span>
+              <span className="inline-flex items-center gap-1">
+                <PointsGlyph type="negative" size={12} />−{props.rangeStats.negative}
+              </span>
+            </span>
+          }
         />
         <KpiCard
           className="min-w-0"
@@ -328,7 +383,7 @@ export function DashboardClient(props: Props) {
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Bar dataKey="positive" name={t.common.stars} fill="var(--positive)" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="negative" name={t.common.triangles} fill="var(--negative)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="negative" name={t.common.triangles} fill="var(--negative-strong)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -384,7 +439,8 @@ export function DashboardClient(props: Props) {
                           +{c.positive}
                         </span>
                         <span className="opacity-50">·</span>
-                        <span className="text-[color:var(--negative)] font-semibold">
+                        <span className="inline-flex items-center gap-0.5 text-[color:var(--negative)] font-semibold">
+                          <BrokenStar size={12} className="text-[color:var(--negative-soft)]" />
                           {c.negative > 0 ? `−${c.negative}` : "0"}
                         </span>
                       </div>
@@ -401,16 +457,19 @@ export function DashboardClient(props: Props) {
                         title={t.common.net}
                         aria-label={`${t.common.net} ${c.net >= 0 ? "+" : ""}${c.net}`}
                       >
-                        <Star
-                          className={cn(
-                            "h-3.5 w-3.5 shrink-0",
-                            c.net > 0 && "fill-amber-400 text-amber-600",
-                            c.net < 0 && "fill-red-100 text-red-400",
-                            c.net === 0 && "fill-[color:var(--surface-2)] text-[color:var(--foreground-muted)]",
-                          )}
-                          strokeWidth={1.5}
-                          aria-hidden
-                        />
+                        {c.net < 0 ? (
+                          <BrokenStar size={14} className="text-[color:var(--negative-soft)]" />
+                        ) : (
+                          <Star
+                            className={cn(
+                              "h-3.5 w-3.5 shrink-0",
+                              c.net > 0 && "fill-amber-400 text-amber-600",
+                              c.net === 0 && "fill-[color:var(--surface-2)] text-[color:var(--foreground-muted)]",
+                            )}
+                            strokeWidth={1.5}
+                            aria-hidden
+                          />
+                        )}
                         <span>
                           {c.net > 0 ? "+" : ""}
                           {c.net}
@@ -466,9 +525,11 @@ export function DashboardClient(props: Props) {
                   r.type === "positive" ? "chip-positive" : "chip-negative",
                 )}
               >
-                {r.type === "positive" ? "☆" : "△"}{" "}
-                {r.points >= 0 ? "+" : ""}
-                {r.points * r.occurrences}
+                <PointsGlyph type={r.type} size={14} />
+                <span>
+                  {r.points >= 0 ? "+" : ""}
+                  {r.points * r.occurrences}
+                </span>
               </span>
               <div className="flex-1 min-w-0">
                 <div className="text-sm sm:truncate break-words sm:break-normal">
@@ -558,7 +619,7 @@ function KpiCard({
   icon: React.ReactNode;
   label: string;
   value: number;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   accent?: string;
   heroTheme?: "kaiju" | "ice-princess";
   highlight?: boolean;
