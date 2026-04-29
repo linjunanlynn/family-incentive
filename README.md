@@ -128,11 +128,12 @@ Use your host’s Postgres backups (e.g. Neon **Branches / Snapshots**, or `pg_d
 
 1. **[Neon](https://neon.tech)**：注册 → 新建项目 → 复制 **Connection string**（选 **Pooled** / `?sslmode=require` 亦可）。
 2. **[Vercel](https://vercel.com)**：Import 本仓库 → **Environment Variables** 添加：
-   - `DATABASE_URL` = Neon 连接串  
+   - `DATABASE_URL` = Neon **Pooled** 连接串（运行时查询）  
+   - `DIRECT_DATABASE_URL` = Neon **Direct** 连接串（与 Pooled 同一项目里另复制一条；`prisma migrate` 专用，避免 pooler 上 advisory lock 超时 **P1002**）  
    - `AUTH_SECRET` = 至少 16 位随机字符串（勿泄露、勿频繁改）
 3. **Build Command** 设为：`npm run vercel-build`  
    （会先 `prisma migrate deploy` 建表，再 `next build`。首次部署后数据库是空的。）
-4. **首次灌数据**：在本地把 `.env` 的 `DATABASE_URL` 指到**同一 Neon 库**（或临时用 Neon SQL Editor），执行一次：
+4. **首次灌数据**：在本地把 `.env` 的 `DATABASE_URL`（可 Pooled）与 `DIRECT_DATABASE_URL`（Direct）指到**同一 Neon 库**（或临时用 Neon SQL Editor），执行一次：
    ```bash
    npx prisma migrate deploy
    npm run db:seed
@@ -148,7 +149,8 @@ Use your host’s Postgres backups (e.g. Neon **Branches / Snapshots**, or `pg_d
 
 | Variable | Purpose |
 | -------- | ------- |
-| `DATABASE_URL` | PostgreSQL URL (`postgresql://…`, see `.env.example`) |
+| `DATABASE_URL` | PostgreSQL URL — on Neon+Vercel use the **pooled** URL for runtime |
+| `DIRECT_DATABASE_URL` | Same DB over **direct** (non-pooler) host — required for `prisma migrate`; local Docker can duplicate `DATABASE_URL` |
 | `AUTH_SECRET` | **Required** for sign-in — secret key for JWT sessions (≥ 16 characters) |
 | `SEED_DEFAULT_PASSWORD` | Optional; password assigned to seeded accounts (default `familydemo`) |
 

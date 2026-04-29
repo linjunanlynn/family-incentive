@@ -50,6 +50,8 @@ type Messages = {
     errTaken: string;
     errMemberTaken: string;
     errChildTaken: string;
+    /** Login form: accounts remembered on this browser */
+    savedOnThisDevice: string;
   };
   common: {
     today: string; week: string; month: string; year: string;
@@ -205,7 +207,7 @@ export const dict: Record<Locale, Messages> = {
     nav: {
       dashboard: "总览",
       checkin: "打卡",
-      rewards: "积分小铺",
+      rewards: "积分乐园",
       manage: "行为配置",
       manageRewards: "奖励配置",
       members: "家庭成员",
@@ -331,7 +333,7 @@ export const dict: Record<Locale, Messages> = {
       removePin: "移除 PIN",
     },
     rewards: {
-      shopTitle: "积分小铺",
+      shopTitle: "积分乐园",
       shopSubtitle: "用你的星星，换喜欢的奖励吧 ✨",
       available: "可用星星",
       earned: "累计获得",
@@ -455,6 +457,7 @@ export const dict: Record<Locale, Messages> = {
       errTaken: "用户名已被占用",
       errMemberTaken: "该成员已绑定账号",
       errChildTaken: "该孩子已绑定账号",
+      savedOnThisDevice: "本设备曾登录",
     },
     weekdays: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
     weekdaysShort: ["日", "一", "二", "三", "四", "五", "六"],
@@ -469,7 +472,7 @@ export const dict: Record<Locale, Messages> = {
     nav: {
       dashboard: "Overview",
       checkin: "Check-in",
-      rewards: "Rewards",
+      rewards: "Points Park",
       manage: "Behaviors",
       manageRewards: "Reward catalog",
       members: "Members",
@@ -595,7 +598,7 @@ export const dict: Record<Locale, Messages> = {
       removePin: "Remove PIN",
     },
     rewards: {
-      shopTitle: "Reward shop",
+      shopTitle: "Points Park",
       shopSubtitle: "Spend your stars on something you love ✨",
       available: "Stars to spend",
       earned: "Earned all-time",
@@ -719,6 +722,7 @@ export const dict: Record<Locale, Messages> = {
       errTaken: "Username is already taken",
       errMemberTaken: "That member already has an account",
       errChildTaken: "That child already has an account",
+      savedOnThisDevice: "Used on this device",
     },
     weekdays: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
     weekdaysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],

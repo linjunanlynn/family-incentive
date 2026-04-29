@@ -3,7 +3,7 @@ import { getCurrentChildId } from "@/lib/session";
 import { CheckinClient } from "@/components/CheckinClient";
 import { addDays, toLocalDateKey } from "@/lib/utils";
 import { getSession } from "@/lib/get-session";
-import { canScore } from "@/lib/permissions";
+import { canScore, isChild } from "@/lib/permissions";
 
 type SearchParams = Promise<{ date?: string }>;
 
@@ -64,6 +64,7 @@ export default async function CheckinPage({ searchParams }: { searchParams: Sear
         })),
       }))}
       canScore={canScoreFlag}
+      showDailyCheckin={!isChild(session)}
       todayLogs={todayLogs.map((l) => ({
         id: l.id,
         type: l.type as "positive" | "negative",

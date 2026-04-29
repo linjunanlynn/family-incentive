@@ -58,6 +58,8 @@ type Props = {
     behavior: { nameZh: string; nameEn: string; category: { nameZh: string; nameEn: string; emoji: string } | null } | null;
     createdBy: { id: string; nameZh: string; nameEn: string; emoji: string } | null;
   }[];
+  /** When false (child account), hide the daily check-in pill (rewards stays visible). */
+  showDailyCheckin: boolean;
 };
 
 type ChartSeries = "bars" | "line";
@@ -152,7 +154,12 @@ export function DashboardClient(props: Props) {
 
   return (
     <div className="space-y-6">
-      <OverviewCheckinNav mode="overview" dateKey={props.selectedDateKey} overviewView={props.view} />
+      <OverviewCheckinNav
+        mode="overview"
+        dateKey={props.selectedDateKey}
+        overviewView={props.view}
+        showDailyCheckin={props.showDailyCheckin}
+      />
 
       {/* Header */}
       <section className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
@@ -210,9 +217,10 @@ export function DashboardClient(props: Props) {
         </div>
       </section>
 
-      {/* KPI cards */}
-      <section className="grid grid-cols-1 min-[380px]:grid-cols-2 md:grid-cols-3 gap-3">
+      {/* KPI cards: mobile 2-col — row1 当前积分 full width; row2 本周累计 | 最佳日 */}
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full">
         <KpiCard
+          className="col-span-2 md:col-span-1 min-w-0"
           icon={<Sparkles className="w-4 h-4" />}
           label={t.dashboard.currentPoints}
           value={props.currentPoints}
@@ -221,6 +229,7 @@ export function DashboardClient(props: Props) {
           highlight
         />
         <KpiCard
+          className="min-w-0"
           icon={<Trophy className="w-4 h-4" />}
           label={
             props.view === "week"
@@ -233,6 +242,7 @@ export function DashboardClient(props: Props) {
           subtitle={`☆ ${props.rangeStats.positive}  ·  △ ${props.rangeStats.negative}`}
         />
         <KpiCard
+          className="min-w-0"
           icon={<Trophy className="w-4 h-4 text-[color:var(--positive)]" />}
           label={t.dashboard.bestDay}
           value={props.best?.net ?? 0}
@@ -543,6 +553,7 @@ function KpiCard({
   accent,
   heroTheme,
   highlight,
+  className,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -551,6 +562,7 @@ function KpiCard({
   accent?: string;
   heroTheme?: "kaiju" | "ice-princess";
   highlight?: boolean;
+  className?: string;
 }) {
   if (highlight && accent) {
     return (
@@ -559,6 +571,7 @@ function KpiCard({
           "relative flex min-h-[118px] flex-col justify-between overflow-hidden rounded-[var(--radius)] border-2 p-5",
           "border-[color:color-mix(in_srgb,var(--primary)_35%,var(--border))]",
           "bg-[color:var(--surface)] shadow-[0_14px_40px_-14px_color-mix(in_srgb,var(--primary)_45%,transparent),0_0_0_1px_color-mix(in_srgb,var(--primary)_12%,transparent)]",
+          className,
         )}
         style={{
           backgroundImage: [
@@ -598,16 +611,18 @@ function KpiCard({
           strokeWidth={1}
           aria-hidden
         />
-        <div className="relative z-[3] flex items-center gap-2 text-xs font-medium text-[color:var(--foreground-muted)]">
-          <span className="inline-flex items-center justify-center rounded-lg bg-amber-100/90 p-1 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+        <div className="relative z-[3] flex items-center gap-2 text-xs font-medium text-[color:var(--foreground-muted)] min-w-0">
+          <span className="inline-flex shrink-0 items-center justify-center rounded-lg bg-amber-100/90 p-1 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
           </span>
-          {label}
+          <span className="min-w-0 truncate">{label}</span>
         </div>
-        <div className="relative z-[3] mt-1 flex flex-wrap items-end gap-2">
+        <div className="relative z-[3] mt-1 flex flex-wrap items-end gap-2 min-w-0">
           <KpiStar value={value} accent={accent} size="hero" />
           {subtitle && (
-            <div className="max-w-full text-xs leading-snug text-[color:var(--foreground-muted)]">{subtitle}</div>
+            <div className="max-w-full min-w-0 text-xs leading-snug text-[color:var(--foreground-muted)] break-words">
+              {subtitle}
+            </div>
           )}
         </div>
       </div>
@@ -615,14 +630,21 @@ function KpiCard({
   }
 
   return (
-    <div className="card relative flex min-h-[100px] flex-col justify-between overflow-hidden p-4">
-      <div className="flex items-center gap-2 text-xs text-[color:var(--foreground-muted)]">
+    <div
+      className={cn(
+        "card relative flex min-h-[100px] flex-col justify-between overflow-hidden p-4",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-2 text-xs text-[color:var(--foreground-muted)] min-w-0">
         {icon}
-        {label}
+        <span className="truncate">{label}</span>
       </div>
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2 min-w-0">
         <KpiStar value={value} accent={accent} size="md" />
-        {subtitle && <div className="text-xs text-[color:var(--foreground-muted)]">{subtitle}</div>}
+        {subtitle && (
+          <div className="text-xs text-[color:var(--foreground-muted)] min-w-0 break-words">{subtitle}</div>
+        )}
       </div>
     </div>
   );

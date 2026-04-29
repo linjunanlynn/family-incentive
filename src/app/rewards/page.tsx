@@ -2,7 +2,10 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentChildId } from "@/lib/session";
 import { getSession } from "@/lib/get-session";
+import { isChild } from "@/lib/permissions";
 import { getWalletSnapshot } from "@/lib/stats";
+import { toLocalDateKey } from "@/lib/utils";
+import { OverviewCheckinNav } from "@/components/OverviewCheckinNav";
 import { RewardsClient } from "@/components/RewardsClient";
 
 export const dynamic = "force-dynamic";
@@ -85,7 +88,13 @@ export default async function RewardsPage() {
     : [];
 
   return (
-    <RewardsClient
+    <>
+      <OverviewCheckinNav
+        mode="rewards"
+        dateKey={toLocalDateKey(new Date())}
+        showDailyCheckin={!isChild(session)}
+      />
+      <RewardsClient
       child={{
         id: child.id,
         nameZh: child.nameZh,
@@ -139,5 +148,6 @@ export default async function RewardsPage() {
       canApprove={canApprove}
       isAdmin={isAdmin}
     />
+    </>
   );
 }

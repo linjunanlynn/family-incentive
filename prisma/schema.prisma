@@ -7,8 +7,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Runtime queries (Neon: use the **pooled** host on Vercel).
+  url       = env("DATABASE_URL")
+  // Migrations need a **direct** session (advisory locks fail through PgBouncer pooler).
+  // Neon dashboard → copy "Direct" connection string. Locally without a pooler, set = DATABASE_URL.
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // ---------- Members (parents / grandparents) ----------

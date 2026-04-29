@@ -4,18 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import {
-  Calendar,
-  CheckSquare,
-  ChevronDown,
-  Gift,
-  Languages,
-  LogOut,
-  Settings,
-  Shield,
-  Sparkles,
-  UserCog,
-} from "lucide-react";
+import { ChevronDown, Languages, LogOut, Settings, Shield, Sparkles, UserCog } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { AccountKind } from "@/auth/jwt";
 import { cn } from "@/lib/utils";
@@ -57,12 +46,6 @@ export function TopBar({
 
   const isAdmin = session?.kind === "parent_admin";
   const isChild = session?.kind === "child";
-
-  const coreNav = [
-    { href: "/", label: t.nav.dashboard, icon: Calendar, show: true },
-    { href: "/checkin", label: t.nav.checkin, icon: CheckSquare, show: !isChild },
-    { href: "/rewards", label: t.nav.rewards, icon: Gift, show: true },
-  ].filter((x) => x.show);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -250,27 +233,6 @@ export function TopBar({
     </Link>
   ) : null;
 
-  const desktopNav = (
-    <nav className="hidden md:flex items-center gap-1 shrink-0">
-      {coreNav.map(({ href, label, icon: Icon }) => {
-        const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              "btn btn-ghost gap-2",
-              active && "bg-[color:var(--surface-2)] text-[color:var(--foreground)]",
-            )}
-          >
-            <Icon className="w-4 h-4" />
-            <span>{label}</span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-
   return (
     <header className="sticky top-0 z-30 bg-[color:var(--background)]/90 backdrop-blur-md border-b border-[color:var(--border)] supports-[backdrop-filter]:bg-[color:var(--background)]/75">
       <div className="max-w-7xl mx-auto px-2 sm:px-6">
@@ -291,32 +253,10 @@ export function TopBar({
           {brandLink}
           {children_.length > 0 ? childStrip : null}
           <div className="flex-1 min-w-4" />
-          {desktopNav}
           {langButton}
           {sessionOrLogin}
         </div>
       </div>
-
-      <nav className="md:hidden flex items-stretch justify-around gap-1 px-1 sm:px-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] pt-0.5 border-t border-[color:var(--border)]/60 bg-[color:var(--background)]/95">
-        {coreNav.map(({ href, label, icon: Icon }) => {
-          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex-1 mx-0.5 inline-flex items-center justify-center gap-1.5 min-h-12 py-2.5 rounded-xl text-xs font-medium touch-manipulation active:scale-[0.98]",
-                active
-                  ? "bg-[color:var(--surface-2)] text-[color:var(--foreground)]"
-                  : "text-[color:var(--foreground-muted)]",
-              )}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
-      </nav>
     </header>
   );
 }

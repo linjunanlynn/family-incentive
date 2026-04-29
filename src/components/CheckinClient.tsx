@@ -47,6 +47,7 @@ export function CheckinClient({
   categories,
   todayLogs,
   canScore = false,
+  showDailyCheckin = true,
 }: {
   child: { id: string; nameZh: string; nameEn: string; emoji: string; color: string };
   dateKey: string;
@@ -54,6 +55,7 @@ export function CheckinClient({
   todayLogs: Log[];
   /** When false (e.g. guest), cards stay read-only: no undo on tiles. */
   canScore?: boolean;
+  showDailyCheckin?: boolean;
 }) {
   const { t, locale, pick } = useI18n();
   const router = useRouter();
@@ -190,7 +192,7 @@ export function CheckinClient({
 
   return (
     <div className="space-y-5">
-      <OverviewCheckinNav mode="checkin" dateKey={dateKey} />
+      <OverviewCheckinNav mode="checkin" dateKey={dateKey} showDailyCheckin={showDailyCheckin} />
 
       {/* Header bar */}
       <section className="card p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">

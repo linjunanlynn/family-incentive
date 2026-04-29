@@ -15,6 +15,8 @@ import {
 } from "@/lib/stats";
 import { addDays, formatRange, parseLocalDateKey, toLocalDateKey } from "@/lib/utils";
 import { DashboardClient } from "@/components/DashboardClient";
+import { getSession } from "@/lib/get-session";
+import { isChild } from "@/lib/permissions";
 
 type SearchParams = Promise<{
   view?: string;
@@ -32,6 +34,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? parseLocalDateKey(sp.date) : new Date();
 
   const { locale } = await getDict();
+  const session = await getSession();
 
   const childId = await getCurrentChildId();
   const children = await prisma.child.findMany({
@@ -128,6 +131,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           : null,
         createdBy: r.createdBy,
       }))}
+      showDailyCheckin={!isChild(session)}
     />
   );
 }
