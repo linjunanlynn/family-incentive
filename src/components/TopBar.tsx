@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { ChevronDown, Languages, LogOut, Settings, Shield, Sparkles, UserCog } from "lucide-react";
+import { ChevronDown, Home, Languages, LogOut, Settings, Shield, Sparkles, UserCog } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { AccountKind } from "@/auth/jwt";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,8 @@ type ChildLite = {
   nameEn: string;
   emoji: string;
   color: string;
+  avatarUrl: string | null;
+  backgroundUrl: string | null;
 };
 
 export type TopBarSession = {
@@ -44,7 +46,9 @@ export function TopBar({
   const currentChild =
     children_.find((c) => c.id === currentChildId) ?? children_[0] ?? null;
 
-  const isAdmin = session?.kind === "parent_admin";
+  const canManageConfig =
+    session?.kind === "super_admin" || session?.kind === "family_admin" || session?.kind === "parent";
+  const canManageFamily = session?.kind === "super_admin" || session?.kind === "family_admin";
   const isChild = session?.kind === "child";
 
   useEffect(() => {
@@ -75,6 +79,10 @@ export function TopBar({
   function selectChild(id: string) {
     startTransition(async () => {
       await setCurrentChildAction(id);
+      if (session?.kind === "super_admin" || pathname.startsWith("/admin")) {
+        router.push("/");
+      }
+      router.refresh();
     });
   }
 
@@ -114,7 +122,18 @@ export function TopBar({
             )}
             style={active ? { boxShadow: `inset 0 0 0 2px ${c.color}33` } : undefined}
           >
-            <span aria-hidden>{c.emoji}</span>
+            <span
+              aria-hidden
+              className="w-5 h-5 rounded-full inline-flex items-center justify-center overflow-hidden shrink-0"
+              style={{ background: `${c.color}22`, color: c.color }}
+            >
+              {c.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                c.emoji
+              )}
+            </span>
             <span>{pick(c)}</span>
           </button>
         );
@@ -175,7 +194,18 @@ export function TopBar({
           role="menu"
           className="absolute right-0 top-full mt-1 w-[min(calc(100vw-1rem),14rem)] sm:w-56 rounded-xl border border-[color:var(--border)] bg-[color:var(--background)] shadow-lg py-1 z-50 max-sm:right-0 max-sm:origin-top-right"
         >
-          {isAdmin && (
+          {session?.kind === "super_admin" && (
+            <Link
+              role="menuitem"
+              href="/admin"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-3 sm:py-2.5 text-sm hover:bg-[color:var(--surface-2)] active:bg-[color:var(--surface-2)] min-h-11"
+            >
+              <Home className="w-4 h-4 text-[color:var(--foreground-muted)]" />
+              {locale === "zh" ? "家庭管理" : "Families"}
+            </Link>
+          )}
+          {canManageConfig && (
             <>
               <Link
                 role="menuitem"
@@ -195,6 +225,7 @@ export function TopBar({
                 <Sparkles className="w-4 h-4 text-[color:var(--foreground-muted)]" />
                 {t.nav.manageRewards}
               </Link>
+              {canManageFamily && (
               <Link
                 role="menuitem"
                 href="/members"
@@ -204,6 +235,8 @@ export function TopBar({
                 <UserCog className="w-4 h-4 text-[color:var(--foreground-muted)]" />
                 {t.nav.members}
               </Link>
+              )}
+              {canManageFamily && (
               <Link
                 role="menuitem"
                 href="/accounts"
@@ -213,6 +246,7 @@ export function TopBar({
                 <Shield className="w-4 h-4 text-[color:var(--foreground-muted)]" />
                 {t.nav.accounts}
               </Link>
+              )}
               <div className="my-1 h-px bg-[color:var(--border)]" />
             </>
           )}

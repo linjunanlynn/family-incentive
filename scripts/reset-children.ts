@@ -8,7 +8,8 @@ const prisma = new PrismaClient();
  * Members and parent/grandparent accounts are kept.
  */
 async function main() {
-  const r = await prisma.child.deleteMany({});
+  const familyId = process.env.FAMILY_ID ?? "default-family";
+  const r = await prisma.child.deleteMany({ where: { familyId } });
   console.log(
     `🗑  Deleted ${r.count} child row(s). Related categories, behaviors, logs, and child login accounts were removed by cascade.`,
   );

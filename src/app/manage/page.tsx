@@ -1,10 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentChildId } from "@/lib/session";
 import { ManageClient } from "@/components/ManageClient";
+import { getSession } from "@/lib/get-session";
+import { childWhereFor } from "@/lib/family-scope";
 
 export default async function ManagePage() {
   const childId = await getCurrentChildId();
-  const children = await prisma.child.findMany({ orderBy: { order: "asc" } });
+  const session = await getSession();
+  const children = await prisma.child.findMany({
+    where: childWhereFor(session),
+    orderBy: { order: "asc" },
+  });
   if (children.length === 0) {
     return <div className="card p-6 text-[color:var(--foreground-muted)]">No children configured.</div>;
   }

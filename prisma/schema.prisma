@@ -15,9 +15,31 @@ datasource db {
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
+// ---------- Families (tenant boundary) ----------
+model Family {
+  id          String   @id @default(cuid())
+  nameZh      String
+  nameEn      String
+  createdById String?
+  createdBy   UserAccount? @relation("FamilyCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     Member[]
+  children    Child[]
+  accounts    UserAccount[]
+  rewards     Reward[]
+  logs        LogEntry[]
+  redemptions RewardRedemption[]
+
+  @@index([createdById])
+}
+
 // ---------- Members (parents / grandparents) ----------
 model Member {
   id        String   @id @default(cuid())
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
   nameZh    String
   nameEn    String
   role      String // "parent" | "grandparent" | "other"
@@ -30,14 +52,20 @@ model Member {
   userAccount        UserAccount?
   redemptionRequests RewardRedemption[] @relation("RedemptionRequester")
   redemptionReviews  RewardRedemption[] @relation("RedemptionReviewer")
+
+  @@index([familyId])
 }
 
 // ---------- Children ----------
 model Child {
   id        String    @id @default(cuid())
+  familyId  String
+  family    Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
   nameZh    String
   nameEn    String
   emoji     String    @default("🧒")
+  avatarUrl String?
+  backgroundUrl String?
   color     String    @default("#3b82f6") // accent for charts
   birthday  DateTime?
   order     Int       @default(0)
@@ -49,6 +77,8 @@ model Child {
   userAccount UserAccount?
   rewards     Reward[]
   redemptions RewardRedemption[]
+
+  @@index([familyId])
 }
 
 // ---------- Login accounts (parents / children) ----------
@@ -57,9 +87,12 @@ model UserAccount {
   username     String   @unique
   passwordHash String
   /**
-   * parent_admin = manage behaviors + accounts; parent = score only; child = read-only overview
+   * super_admin = global system owner; family_admin = family owner;
+   * parent = family parent; child = child self-service account
    */
   accountKind  String
+  familyId     String?
+  family       Family?  @relation(fields: [familyId], references: [id], onDelete: Cascade)
   memberId     String?  @unique
   member       Member?  @relation(fields: [memberId], references: [id], onDelete: Cascade)
   childId      String?  @unique
@@ -67,6 +100,9 @@ model UserAccount {
   disabled     Boolean  @default(false)
   createdAt    DateTime @default(now())
 
+  createdFamilies Family[] @relation("FamilyCreator")
+
+  @@index([familyId])
   @@index([memberId])
   @@index([childId])
 }
@@ -113,6 +149,8 @@ model Behavior {
 // ---------- Daily log entries ----------
 model LogEntry {
   id          String   @id @default(cuid())
+  familyId    String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
   childId     String
   child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
   behaviorId  String
@@ -128,6 +166,7 @@ model LogEntry {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([familyId, date])
   @@index([childId, date])
   @@index([behaviorId])
 }
@@ -137,6 +176,8 @@ model LogEntry {
 //        childId == "X"   → only that child can redeem this reward.
 model Reward {
   id           String   @id @default(cuid())
+  familyId     String
+  family       Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
   childId      String?
   child        Child?   @relation(fields: [childId], references: [id], onDelete: Cascade)
   nameZh       String
@@ -167,6 +208,7 @@ model Reward {
 
   redemptions RewardRedemption[]
 
+  @@index([familyId])
   @@index([childId])
   @@index([category])
 }
@@ -176,6 +218,8 @@ model Reward {
 //              approved → fulfilled
 model RewardRedemption {
   id            String    @id @default(cuid())
+  familyId      String
+  family        Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
   rewardId      String
   reward        Reward    @relation(fields: [rewardId], references: [id], onDelete: Cascade)
   childId       String
@@ -201,6 +245,7 @@ model RewardRedemption {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  @@index([familyId, status])
   @@index([childId, status])
   @@index([rewardId])
   @@index([status, createdAt])

@@ -13,8 +13,14 @@ export async function createUserAccountAction(input: {
   memberId: string | null;
   childId: string | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!(await assertAdmin())) return { ok: false, error: "forbidden" };
+  const session = await assertAdmin();
+  if (!session || !session.familyId || session.kind === "super_admin") {
+    return { ok: false, error: "forbidden" };
+  }
   const u = input.username.trim().toLowerCase();
+  if (input.accountKind !== "parent" && input.accountKind !== "child") {
+    return { ok: false, error: "forbidden" };
+  }
   if (!u || u.length < 2) return { ok: false, error: "username" };
   if (!input.password || input.password.length < 4) return { ok: false, error: "password" };
   const hasM = !!input.memberId;
@@ -28,10 +34,20 @@ export async function createUserAccountAction(input: {
   const exists = await prisma.userAccount.findUnique({ where: { username: u } });
   if (exists) return { ok: false, error: "taken" };
   if (input.memberId) {
+    const member = await prisma.member.findFirst({
+      where: { id: input.memberId, familyId: session.familyId },
+      select: { id: true },
+    });
+    if (!member) return { ok: false, error: "link" };
     const taken = await prisma.userAccount.findUnique({ where: { memberId: input.memberId } });
     if (taken) return { ok: false, error: "memberTaken" };
   }
   if (input.childId) {
+    const child = await prisma.child.findFirst({
+      where: { id: input.childId, familyId: session.familyId },
+      select: { id: true },
+    });
+    if (!child) return { ok: false, error: "link" };
     const taken = await prisma.userAccount.findUnique({ where: { childId: input.childId } });
     if (taken) return { ok: false, error: "childTaken" };
   }
@@ -40,6 +56,7 @@ export async function createUserAccountAction(input: {
       username: u,
       passwordHash: await bcrypt.hash(input.password, 10),
       accountKind: input.accountKind,
+      familyId: session.familyId,
       memberId: input.memberId,
       childId: input.childId,
     },
@@ -52,7 +69,8 @@ export async function resetUserPasswordAction(
   id: string,
   newPassword: string,
 ): Promise<{ ok: true } | { ok: false }> {
-  if (!(await assertAdmin())) return { ok: false };
+  const session = await assertAdmin();
+  if (!session || !(await canManageAccount(session, id))) return { ok: false };
   if (!newPassword || newPassword.length < 4) return { ok: false };
   await prisma.userAccount.update({
     where: { id },
@@ -63,13 +81,32 @@ export async function resetUserPasswordAction(
 }
 
 export async function setUserDisabledAction(id: string, disabled: boolean) {
-  if (!(await assertAdmin())) return;
+  const session = await assertAdmin();
+  if (!session || !(await canManageAccount(session, id))) return;
   await prisma.userAccount.update({ where: { id }, data: { disabled } });
   revalidatePath("/accounts");
 }
 
 export async function deleteUserAccountAction(id: string) {
-  if (!(await assertAdmin())) return;
+  const session = await assertAdmin();
+  if (!session || !(await canManageAccount(session, id))) return;
   await prisma.userAccount.delete({ where: { id } });
   revalidatePath("/accounts");
+}
+
+async function canManageAccount(
+  session: NonNullable<Awaited<ReturnType<typeof assertAdmin>>>,
+  id: string,
+): Promise<boolean> {
+  const account = await prisma.userAccount.findUnique({
+    where: { id },
+    select: { familyId: true, accountKind: true },
+  });
+  if (!account) return false;
+  if (session.kind === "super_admin") return account.accountKind !== "super_admin";
+  return (
+    !!session.familyId &&
+    account.familyId === session.familyId &&
+    (account.accountKind === "parent" || account.accountKind === "child")
+  );
 }

@@ -10,19 +10,24 @@ import { CHILD_COOKIE } from "@/lib/session";
 const THIRTY_DAYS = 60 * 60 * 24 * 30;
 
 function cookieOptions() {
+  const secureCookie =
+    process.env.AUTH_COOKIE_SECURE === "false"
+      ? false
+      : process.env.NODE_ENV === "production";
+
   return {
     path: "/",
     httpOnly: true,
     sameSite: "lax" as const,
     maxAge: THIRTY_DAYS,
-    secure: process.env.NODE_ENV === "production",
+    secure: secureCookie,
   };
 }
 
 export async function loginAction(
   username: string,
   password: string,
-): Promise<{ ok: true } | { ok: false; error: "invalid" | "disabled" }> {
+): Promise<{ ok: true; redirectTo: string } | { ok: false; error: "invalid" | "disabled" }> {
   const u = username.trim().toLowerCase();
   if (!u || !password) return { ok: false, error: "invalid" };
 
@@ -33,6 +38,7 @@ export async function loginAction(
       username: true,
       passwordHash: true,
       accountKind: true,
+      familyId: true,
       memberId: true,
       childId: true,
       disabled: true,
@@ -46,6 +52,7 @@ export async function loginAction(
     sub: acc.id,
     username: acc.username,
     kind: acc.accountKind as SessionClaims["kind"],
+    familyId: acc.familyId,
     memberId: acc.memberId,
     childId: acc.childId,
   };
@@ -58,7 +65,7 @@ export async function loginAction(
   }
 
   revalidatePath("/", "layout");
-  return { ok: true };
+  return { ok: true, redirectTo: acc.accountKind === "super_admin" ? "/admin" : "/" };
 }
 
 export async function logoutAction() {

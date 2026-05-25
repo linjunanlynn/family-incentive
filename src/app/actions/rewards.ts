@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/get-session";
-import { isAdmin } from "@/lib/permissions";
+import { canManageConfig } from "@/lib/permissions";
+import { canAccessChild, childFamilyId } from "@/lib/family-scope";
 import { getCurrentPoints } from "@/lib/stats";
 
 export type RewardCategory =
@@ -50,16 +51,24 @@ export type CreateRewardInput = {
 
 export async function createRewardAction(input: CreateRewardInput) {
   const s = await getSession();
-  if (!isAdmin(s)) return { ok: false as const, error: "forbidden" as const };
+  if (!canManageConfig(s)) return { ok: false as const, error: "forbidden" as const };
+  const familyId = input.childId ? await childFamilyId(input.childId) : s?.familyId;
+  if (!familyId || (input.childId && !(await canAccessChild(s, input.childId)))) {
+    return { ok: false as const, error: "forbidden" as const };
+  }
   const nameZh = input.nameZh.trim();
   const nameEn = input.nameEn.trim();
   if (!nameZh || !nameEn) {
     return { ok: false as const, error: "invalid" as const };
   }
-  const lastOrder = await prisma.reward.aggregate({ _max: { order: true } });
+  const lastOrder = await prisma.reward.aggregate({
+    where: { familyId },
+    _max: { order: true },
+  });
   await prisma.reward.create({
     data: {
       childId: input.childId,
+      familyId,
       nameZh,
       nameEn,
       descZh: input.descZh?.trim() || null,
@@ -81,10 +90,22 @@ export type UpdateRewardInput = Partial<CreateRewardInput> & { id: string };
 
 export async function updateRewardAction(input: UpdateRewardInput) {
   const s = await getSession();
-  if (!isAdmin(s)) return { ok: false as const, error: "forbidden" as const };
+  if (!canManageConfig(s)) return { ok: false as const, error: "forbidden" as const };
+  const currentReward = await prisma.reward.findUnique({
+    where: { id: input.id },
+    select: { familyId: true },
+  });
+  if (!currentReward || (s?.kind !== "super_admin" && currentReward.familyId !== s?.familyId)) {
+    return { ok: false as const, error: "forbidden" as const };
+  }
+  if (input.childId && !(await canAccessChild(s, input.childId))) {
+    return { ok: false as const, error: "forbidden" as const };
+  }
+  const nextFamilyId = input.childId ? (await childFamilyId(input.childId)) ?? undefined : undefined;
   await prisma.reward.update({
     where: { id: input.id },
     data: {
+      familyId: nextFamilyId,
       childId: input.childId === undefined ? undefined : input.childId,
       nameZh: input.nameZh?.trim(),
       nameEn: input.nameEn?.trim(),
@@ -117,16 +138,27 @@ export async function updateRewardAction(input: UpdateRewardInput) {
 
 export async function archiveRewardAction(id: string, archived: boolean) {
   const s = await getSession();
-  if (!isAdmin(s)) return { ok: false as const, error: "forbidden" as const };
-  await prisma.reward.update({ where: { id }, data: { archived } });
+  if (!canManageConfig(s)) return { ok: false as const, error: "forbidden" as const };
+  await prisma.reward.updateMany({
+    where: {
+      id,
+      ...(s?.kind === "super_admin" ? {} : { familyId: s?.familyId ?? "__no_family__" }),
+    },
+    data: { archived },
+  });
   revalidatePath("/rewards", "layout");
   return { ok: true as const };
 }
 
 export async function deleteRewardAction(id: string) {
   const s = await getSession();
-  if (!isAdmin(s)) return { ok: false as const, error: "forbidden" as const };
-  await prisma.reward.delete({ where: { id } });
+  if (!canManageConfig(s)) return { ok: false as const, error: "forbidden" as const };
+  await prisma.reward.deleteMany({
+    where: {
+      id,
+      ...(s?.kind === "super_admin" ? {} : { familyId: s?.familyId ?? "__no_family__" }),
+    },
+  });
   revalidatePath("/rewards", "layout");
   return { ok: true as const };
 }
@@ -151,8 +183,13 @@ export async function requestRedemptionAction(input: {
     if (!s.childId || s.childId !== input.childId) {
       return { ok: false as const, error: "forbidden" as const };
     }
-  } else if (s.kind === "parent" || s.kind === "parent_admin") {
+  } else if (s.kind === "parent" || s.kind === "family_admin" || s.kind === "super_admin") {
     if (!s.memberId) {
+      if (s.kind !== "super_admin") {
+        return { ok: false as const, error: "forbidden" as const };
+      }
+    }
+    if (!(await canAccessChild(s, input.childId))) {
       return { ok: false as const, error: "forbidden" as const };
     }
   } else {
@@ -165,6 +202,7 @@ export async function requestRedemptionAction(input: {
       id: true,
       archived: true,
       costPoints: true,
+      familyId: true,
       childId: true,
       stock: true,
       cooldownDays: true,
@@ -172,6 +210,13 @@ export async function requestRedemptionAction(input: {
   });
   if (!reward || reward.archived) {
     return { ok: false as const, error: "unavailable" as const };
+  }
+  if (s.kind !== "super_admin" && reward.familyId !== s.familyId) {
+    return { ok: false as const, error: "forbidden" as const };
+  }
+  const targetFamilyId = await childFamilyId(input.childId);
+  if (!targetFamilyId || targetFamilyId !== reward.familyId) {
+    return { ok: false as const, error: "wrong_child" as const };
   }
   if (reward.childId && reward.childId !== input.childId) {
     return { ok: false as const, error: "wrong_child" as const };
@@ -210,6 +255,7 @@ export async function requestRedemptionAction(input: {
   await prisma.rewardRedemption.create({
     data: {
       rewardId: reward.id,
+      familyId: reward.familyId,
       childId: input.childId,
       costPoints: reward.costPoints,
       status: "pending",
@@ -226,7 +272,7 @@ export async function requestRedemptionAction(input: {
 /** Parents/admin approve a pending request. Atomically deducts stock. */
 export async function approveRedemptionAction(id: string) {
   const s = await getSession();
-  if (!s || (s.kind !== "parent" && s.kind !== "parent_admin")) {
+  if (!s || (s.kind !== "parent" && s.kind !== "family_admin" && s.kind !== "super_admin")) {
     return { ok: false as const, error: "forbidden" as const };
   }
 
@@ -234,6 +280,7 @@ export async function approveRedemptionAction(id: string) {
     where: { id },
     select: {
       id: true,
+      familyId: true,
       status: true,
       childId: true,
       costPoints: true,
@@ -242,6 +289,9 @@ export async function approveRedemptionAction(id: string) {
   });
   if (!r || r.status !== "pending") {
     return { ok: false as const, error: "bad_status" as const };
+  }
+  if (s.kind !== "super_admin" && r.familyId !== s.familyId) {
+    return { ok: false as const, error: "forbidden" as const };
   }
   if (r.reward.archived) return { ok: false as const, error: "unavailable" as const };
   if (r.reward.stock !== null && r.reward.stock <= 0) {
@@ -279,15 +329,18 @@ export async function approveRedemptionAction(id: string) {
 
 export async function rejectRedemptionAction(id: string, reason?: string) {
   const s = await getSession();
-  if (!s || (s.kind !== "parent" && s.kind !== "parent_admin")) {
+  if (!s || (s.kind !== "parent" && s.kind !== "family_admin" && s.kind !== "super_admin")) {
     return { ok: false as const, error: "forbidden" as const };
   }
   const cur = await prisma.rewardRedemption.findUnique({
     where: { id },
-    select: { status: true },
+    select: { status: true, familyId: true },
   });
   if (!cur || cur.status !== "pending") {
     return { ok: false as const, error: "bad_status" as const };
+  }
+  if (s.kind !== "super_admin" && cur.familyId !== s.familyId) {
+    return { ok: false as const, error: "forbidden" as const };
   }
   await prisma.rewardRedemption.update({
     where: { id },
@@ -304,15 +357,18 @@ export async function rejectRedemptionAction(id: string, reason?: string) {
 
 export async function fulfillRedemptionAction(id: string) {
   const s = await getSession();
-  if (!s || (s.kind !== "parent" && s.kind !== "parent_admin")) {
+  if (!s || (s.kind !== "parent" && s.kind !== "family_admin" && s.kind !== "super_admin")) {
     return { ok: false as const, error: "forbidden" as const };
   }
   const cur = await prisma.rewardRedemption.findUnique({
     where: { id },
-    select: { status: true },
+    select: { status: true, familyId: true },
   });
   if (!cur || cur.status !== "approved") {
     return { ok: false as const, error: "bad_status" as const };
+  }
+  if (s.kind !== "super_admin" && cur.familyId !== s.familyId) {
+    return { ok: false as const, error: "forbidden" as const };
   }
   await prisma.rewardRedemption.update({
     where: { id },
@@ -332,12 +388,15 @@ export async function cancelRedemptionAction(id: string) {
   if (!s) return { ok: false as const, error: "forbidden" as const };
   const cur = await prisma.rewardRedemption.findUnique({
     where: { id },
-    select: { status: true, childId: true },
+    select: { status: true, childId: true, familyId: true },
   });
   if (!cur || cur.status !== "pending") {
     return { ok: false as const, error: "bad_status" as const };
   }
   if (s.kind === "child" && cur.childId !== s.childId) {
+    return { ok: false as const, error: "forbidden" as const };
+  }
+  if (s.kind !== "child" && s.kind !== "super_admin" && cur.familyId !== s.familyId) {
     return { ok: false as const, error: "forbidden" as const };
   }
   await prisma.rewardRedemption.update({

@@ -58,7 +58,7 @@ npm run db:seed          # Jimmy + Aimee + behaviors + default login accounts
 npm run dev              # http://localhost:3000
 ```
 
-After seed, sign in with any of **`mom`** / **`dad`** / **`grandma`** / **`grandpa`** / **`jimmy`** / **`aimee`** — default password **`familydemo`** (override with `SEED_DEFAULT_PASSWORD` before seeding). **`mom`** is the admin account.
+After seed, sign in with **`superadmin`** (system owner), **`mom`** (family admin), **`dad`** / **`grandma`** / **`grandpa`** (parents), or **`jimmy`** / **`aimee`** (children) — default password **`familydemo`** (override with `SEED_DEFAULT_PASSWORD` before seeding).
 
 Open <http://localhost:3000> in your browser. To use it from other devices on the
 LAN (phones for the grandparents):
@@ -72,7 +72,7 @@ For "production"-style hosting on the home network:
 
 ```bash
 npm run build
-PORT=3000 npm start -- -H 0.0.0.0
+AUTH_SECRET="<16+ chars>" AUTH_COOKIE_SECURE=false PORT=3000 npm start -- -H 0.0.0.0
 ```
 
 ---
@@ -152,6 +152,7 @@ Use your host’s Postgres backups (e.g. Neon **Branches / Snapshots**, or `pg_d
 | `DATABASE_URL` | PostgreSQL URL — on Neon+Vercel use the **pooled** URL for runtime |
 | `DIRECT_DATABASE_URL` | Same DB over **direct** (non-pooler) host — required for `prisma migrate`; local Docker can duplicate `DATABASE_URL` |
 | `AUTH_SECRET` | **Required** for sign-in — secret key for JWT sessions (≥ 16 characters) |
+| `AUTH_COOKIE_SECURE` | Optional; set `false` only for local HTTP production-style hosting |
 | `SEED_DEFAULT_PASSWORD` | Optional; password assigned to seeded accounts (default `familydemo`) |
 
 ---

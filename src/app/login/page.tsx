@@ -3,12 +3,13 @@ import { cookies } from "next/headers";
 import { getDict } from "@/i18n/server";
 import { readSessionToken, SESSION_COOKIE } from "@/auth/jwt";
 import { LoginForm } from "@/components/LoginForm";
+import { routeAfterLogin } from "@/lib/route-after-login";
 
 export default async function LoginPage() {
   const raw = (await cookies()).get(SESSION_COOKIE)?.value;
   if (raw) {
     const s = await readSessionToken(raw);
-    if (s) redirect("/");
+    if (s) redirect(routeAfterLogin(s));
   }
   const { t } = await getDict();
   return (

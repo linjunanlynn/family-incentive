@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { assertAdmin } from "@/lib/guard";
+import { assertConfigManager } from "@/lib/guard";
+import { canAccessChild } from "@/lib/family-scope";
 import { revalidatePath } from "next/cache";
 
 // ---------- Categories ----------
@@ -11,7 +12,8 @@ export async function createCategoryAction(input: {
   nameEn: string;
   emoji: string;
 }) {
-  if (!(await assertAdmin())) return;
+  const session = await assertConfigManager();
+  if (!(await canAccessChild(session, input.childId))) return;
   const slug =
     input.nameEn
       .toLowerCase()
@@ -40,9 +42,13 @@ export async function updateCategoryAction(input: {
   nameEn?: string;
   emoji?: string;
 }) {
-  if (!(await assertAdmin())) return;
-  await prisma.category.update({
-    where: { id: input.id },
+  const session = await assertConfigManager();
+  if (!session) return;
+  await prisma.category.updateMany({
+    where: {
+      id: input.id,
+      ...(session.kind === "super_admin" ? {} : { child: { is: { familyId: session.familyId ?? "__no_family__" } } }),
+    },
     data: {
       nameZh: input.nameZh,
       nameEn: input.nameEn,
@@ -53,14 +59,27 @@ export async function updateCategoryAction(input: {
 }
 
 export async function deleteCategoryAction(id: string) {
-  if (!(await assertAdmin())) return;
-  await prisma.category.delete({ where: { id } });
+  const session = await assertConfigManager();
+  if (!session) return;
+  await prisma.category.deleteMany({
+    where: {
+      id,
+      ...(session.kind === "super_admin" ? {} : { child: { is: { familyId: session.familyId ?? "__no_family__" } } }),
+    },
+  });
   revalidatePath("/manage");
 }
 
 export async function archiveCategoryAction(id: string, archived: boolean) {
-  if (!(await assertAdmin())) return;
-  await prisma.category.update({ where: { id }, data: { archived } });
+  const session = await assertConfigManager();
+  if (!session) return;
+  await prisma.category.updateMany({
+    where: {
+      id,
+      ...(session.kind === "super_admin" ? {} : { child: { is: { familyId: session.familyId ?? "__no_family__" } } }),
+    },
+    data: { archived },
+  });
   revalidatePath("/manage");
 }
 
@@ -72,7 +91,13 @@ export async function createBehaviorAction(input: {
   nameEn: string;
   points: number;
 }) {
-  if (!(await assertAdmin())) return;
+  const session = await assertConfigManager();
+  if (!session) return;
+  const category = await prisma.category.findUnique({
+    where: { id: input.categoryId },
+    select: { child: { select: { familyId: true } } },
+  });
+  if (!category || (session.kind !== "super_admin" && category.child.familyId !== session.familyId)) return;
   const existingMax = await prisma.behavior.aggregate({
     where: { categoryId: input.categoryId },
     _max: { order: true },
@@ -97,9 +122,13 @@ export async function updateBehaviorAction(input: {
   type?: "positive" | "negative";
   points?: number;
 }) {
-  if (!(await assertAdmin())) return;
-  await prisma.behavior.update({
-    where: { id: input.id },
+  const session = await assertConfigManager();
+  if (!session) return;
+  await prisma.behavior.updateMany({
+    where: {
+      id: input.id,
+      ...(session.kind === "super_admin" ? {} : { category: { is: { child: { is: { familyId: session.familyId ?? "__no_family__" } } } } }),
+    },
     data: {
       nameZh: input.nameZh,
       nameEn: input.nameEn,
@@ -111,23 +140,41 @@ export async function updateBehaviorAction(input: {
 }
 
 export async function deleteBehaviorAction(id: string) {
-  if (!(await assertAdmin())) return;
-  await prisma.behavior.delete({ where: { id } });
+  const session = await assertConfigManager();
+  if (!session) return;
+  await prisma.behavior.deleteMany({
+    where: {
+      id,
+      ...(session.kind === "super_admin" ? {} : { category: { is: { child: { is: { familyId: session.familyId ?? "__no_family__" } } } } }),
+    },
+  });
   revalidatePath("/manage");
 }
 
 export async function archiveBehaviorAction(id: string, archived: boolean) {
-  if (!(await assertAdmin())) return;
-  await prisma.behavior.update({ where: { id }, data: { archived } });
+  const session = await assertConfigManager();
+  if (!session) return;
+  await prisma.behavior.updateMany({
+    where: {
+      id,
+      ...(session.kind === "super_admin" ? {} : { category: { is: { child: { is: { familyId: session.familyId ?? "__no_family__" } } } } }),
+    },
+    data: { archived },
+  });
   revalidatePath("/manage");
 }
 
 // ---------- Children ----------
 export async function createChildAction(input: { nameZh: string; nameEn: string; emoji: string; color: string }) {
-  if (!(await assertAdmin())) return;
-  const order = await prisma.child.aggregate({ _max: { order: true } });
-  await prisma.child.create({
+  const session = await assertConfigManager();
+  if (!session?.familyId) return;
+  const order = await prisma.child.aggregate({
+    where: { familyId: session.familyId },
+    _max: { order: true },
+  });
+  const child = await prisma.child.create({
     data: {
+      familyId: session.familyId,
       nameZh: input.nameZh,
       nameEn: input.nameEn,
       emoji: input.emoji || "🧒",
@@ -135,6 +182,7 @@ export async function createChildAction(input: { nameZh: string; nameEn: string;
       order: (order._max.order ?? -1) + 1,
     },
   });
+  await copyTemplateToChild(session.familyId, child.id);
   revalidatePath("/", "layout");
 }
 
@@ -145,7 +193,8 @@ export async function updateChildAction(input: {
   emoji?: string;
   color?: string;
 }) {
-  if (!(await assertAdmin())) return;
+  const session = await assertConfigManager();
+  if (!(await canAccessChild(session, input.id))) return;
   await prisma.child.update({
     where: { id: input.id },
     data: {
@@ -156,4 +205,54 @@ export async function updateChildAction(input: {
     },
   });
   revalidatePath("/", "layout");
+}
+
+async function copyTemplateToChild(familyId: string, childId: string) {
+  const template = await prisma.child.findFirst({
+    where: { familyId, id: { not: childId }, categories: { some: {} } },
+    orderBy: { order: "asc" },
+    include: {
+      categories: {
+        orderBy: { order: "asc" },
+        include: { behaviors: { orderBy: { order: "asc" } } },
+      },
+    },
+  });
+  const source = template ?? await prisma.child.findFirst({
+    where: { familyId: "default-family", categories: { some: {} } },
+    orderBy: { order: "asc" },
+    include: {
+      categories: {
+        orderBy: { order: "asc" },
+        include: { behaviors: { orderBy: { order: "asc" } } },
+      },
+    },
+  });
+  if (!source) return;
+  for (const category of source.categories) {
+    const created = await prisma.category.create({
+      data: {
+        childId,
+        key: `${category.key}-${Date.now().toString(36)}`,
+        nameZh: category.nameZh,
+        nameEn: category.nameEn,
+        emoji: category.emoji,
+        order: category.order,
+        archived: category.archived,
+      },
+    });
+    for (const behavior of category.behaviors) {
+      await prisma.behavior.create({
+        data: {
+          categoryId: created.id,
+          type: behavior.type,
+          nameZh: behavior.nameZh,
+          nameEn: behavior.nameEn,
+          points: behavior.points,
+          order: behavior.order,
+          archived: behavior.archived,
+        },
+      });
+    }
+  }
 }

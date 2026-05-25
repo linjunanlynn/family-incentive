@@ -17,6 +17,7 @@ import { addDays, formatRange, parseLocalDateKey, toLocalDateKey } from "@/lib/u
 import { DashboardClient } from "@/components/DashboardClient";
 import { getSession } from "@/lib/get-session";
 import { isChild } from "@/lib/permissions";
+import { childWhereFor } from "@/lib/family-scope";
 
 type SearchParams = Promise<{
   view?: string;
@@ -38,11 +39,11 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   const childId = await getCurrentChildId();
   const children = await prisma.child.findMany({
-    where: { archived: false },
+    where: { archived: false, ...childWhereFor(session) },
     orderBy: { order: "asc" },
   });
   if (children.length === 0) {
-    return <EmptyState message="No children yet. Use the seed script." />;
+    return <EmptyState message="还没有孩子成员。请先到“家庭成员”创建孩子账号。" />;
   }
   const child = children.find((c) => c.id === childId) ?? children[0];
 
@@ -104,7 +105,15 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       view={view}
       selectedDateKey={toLocalDateKey(baseDate)}
       todayDateKey={toLocalDateKey(new Date())}
-      child={{ id: child.id, nameZh: child.nameZh, nameEn: child.nameEn, emoji: child.emoji, color: child.color }}
+      child={{
+        id: child.id,
+        nameZh: child.nameZh,
+        nameEn: child.nameEn,
+        emoji: child.emoji,
+        color: child.color,
+        avatarUrl: child.avatarUrl,
+        backgroundUrl: child.backgroundUrl,
+      }}
       currentPoints={currentPoints}
       rangeStats={rangeStats}
       daily={daily}
@@ -141,7 +150,7 @@ function EmptyState({ message }: { message: string }) {
     <div className="card p-8 text-center text-[color:var(--foreground-muted)]">
       {message}
       <div className="mt-4">
-        <Link className="btn btn-primary" href="/manage">Configure</Link>
+        <Link className="btn btn-primary" href="/members">创建家庭成员</Link>
       </div>
     </div>
   );

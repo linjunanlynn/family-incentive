@@ -2,12 +2,13 @@ import { SignJWT, jwtVerify } from "jose";
 
 export const SESSION_COOKIE = "fi_session";
 
-export type AccountKind = "parent_admin" | "parent" | "child";
+export type AccountKind = "super_admin" | "family_admin" | "parent" | "child";
 
 export type SessionClaims = {
   sub: string;
   username: string;
   kind: AccountKind;
+  familyId: string | null;
   memberId: string | null;
   childId: string | null;
 };
@@ -41,6 +42,7 @@ export async function createSessionToken(claims: SessionClaims): Promise<string>
   return new SignJWT({
     u: claims.username,
     k: claims.kind,
+    fid: claims.familyId,
     mid: claims.memberId,
     cid: claims.childId,
   })
@@ -57,11 +59,12 @@ export async function readSessionToken(token: string): Promise<SessionClaims | n
     const sub = payload.sub;
     if (!sub || typeof payload.u !== "string" || typeof payload.k !== "string") return null;
     const k = payload.k as AccountKind;
-    if (k !== "parent_admin" && k !== "parent" && k !== "child") return null;
+    if (k !== "super_admin" && k !== "family_admin" && k !== "parent" && k !== "child") return null;
     return {
       sub,
       username: payload.u,
       kind: k,
+      familyId: typeof payload.fid === "string" ? payload.fid : null,
       memberId: typeof payload.mid === "string" ? payload.mid : null,
       childId: typeof payload.cid === "string" ? payload.cid : null,
     };

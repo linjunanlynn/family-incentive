@@ -24,10 +24,13 @@ export function LoginForm() {
   const blurCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const last = readLastUsername();
-    setSavedUsernames(readSavedUsernames());
-    if (last) setUsername(last);
+    const timer = window.setTimeout(() => {
+      const last = readLastUsername();
+      setSavedUsernames(readSavedUsernames());
+      if (last) setUsername(last);
+    }, 0);
     return () => {
+      window.clearTimeout(timer);
       if (blurCloseTimer.current) clearTimeout(blurCloseTimer.current);
     };
   }, []);
@@ -58,7 +61,7 @@ export function LoginForm() {
         rememberSuccessfulLogin(username);
         setSavedUsernames(readSavedUsernames());
         const from = sp.get("from");
-        router.push(from && from.startsWith("/") ? from : "/");
+        router.push(res.redirectTo === "/admin" ? res.redirectTo : from && from.startsWith("/") ? from : res.redirectTo);
         router.refresh();
       } else {
         toast.error(t.auth.invalid);
@@ -96,8 +99,6 @@ export function LoginForm() {
             }
           }}
           disabled={pending}
-          aria-expanded={canShowList}
-          aria-controls={canShowList ? listId : undefined}
           aria-autocomplete="list"
         />
         {canShowList ? (

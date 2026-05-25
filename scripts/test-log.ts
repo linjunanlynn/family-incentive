@@ -14,9 +14,9 @@ async function main() {
 
   await prisma.logEntry.createMany({
     data: [
-      { childId: child.id, behaviorId: beh.id, type: "positive", points: beh.points, occurrences: 1, date, notes: "test today" },
-      { childId: child.id, behaviorId: beh.id, type: "positive", points: beh.points, occurrences: 2, date: new Date(date.getTime() - 86400000), notes: "yesterday" },
-      { childId: child.id, behaviorId: beh.id, type: "positive", points: beh.points, occurrences: 1, date: new Date(date.getTime() - 2*86400000) },
+      { familyId: child.familyId, childId: child.id, behaviorId: beh.id, type: "positive", points: beh.points, occurrences: 1, date, notes: "test today" },
+      { familyId: child.familyId, childId: child.id, behaviorId: beh.id, type: "positive", points: beh.points, occurrences: 2, date: new Date(date.getTime() - 86400000), notes: "yesterday" },
+      { familyId: child.familyId, childId: child.id, behaviorId: beh.id, type: "positive", points: beh.points, occurrences: 1, date: new Date(date.getTime() - 2*86400000) },
     ],
   });
 
@@ -25,7 +25,7 @@ async function main() {
   });
   if (negBeh) {
     await prisma.logEntry.create({
-      data: { childId: child.id, behaviorId: negBeh.id, type: "negative", points: -negBeh.points, occurrences: 1, date: new Date(date.getTime() - 3*86400000) },
+      data: { familyId: child.familyId, childId: child.id, behaviorId: negBeh.id, type: "negative", points: -negBeh.points, occurrences: 1, date: new Date(date.getTime() - 3*86400000) },
     });
   }
 

@@ -7,6 +7,7 @@ import { getWalletSnapshot } from "@/lib/stats";
 import { toLocalDateKey } from "@/lib/utils";
 import { OverviewCheckinNav } from "@/components/OverviewCheckinNav";
 import { RewardsClient } from "@/components/RewardsClient";
+import { childWhereFor } from "@/lib/family-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function RewardsPage() {
   const session = await getSession();
   const childId = await getCurrentChildId();
   const allChildren = await prisma.child.findMany({
-    where: { archived: false },
+    where: { archived: false, ...childWhereFor(session) },
     orderBy: { order: "asc" },
   });
   if (allChildren.length === 0) {
@@ -41,15 +42,19 @@ export default async function RewardsPage() {
     prisma.reward.findMany({
       where: {
         archived: false,
+        familyId: child.familyId,
         OR: [{ childId: null }, { childId: child.id }],
       },
       orderBy: [{ order: "asc" }, { createdAt: "asc" }],
     }),
     // Parent inbox: pending requests across all children (so they can clear them
     // from the same screen).
-    session?.kind === "parent" || session?.kind === "parent_admin"
+    session?.kind === "parent" || session?.kind === "family_admin" || session?.kind === "super_admin"
       ? prisma.rewardRedemption.findMany({
-          where: { status: { in: ["pending", "approved"] } },
+          where: {
+            status: { in: ["pending", "approved"] },
+            ...(session.kind === "super_admin" ? {} : { familyId: session.familyId ?? "__no_family__" }),
+          },
           orderBy: { createdAt: "asc" },
           take: 25,
           include: {
@@ -64,13 +69,16 @@ export default async function RewardsPage() {
       : Promise.resolve([] as never[]),
   ]);
 
-  const isAdmin = session?.kind === "parent_admin";
-  const canApprove = session?.kind === "parent" || session?.kind === "parent_admin";
+  const isAdmin =
+    session?.kind === "super_admin" || session?.kind === "family_admin" || session?.kind === "parent";
+  const canApprove =
+    session?.kind === "parent" || session?.kind === "family_admin" || session?.kind === "super_admin";
   const canRequestRedemption =
     !!session &&
     (session.kind === "child" ||
       session.kind === "parent" ||
-      session.kind === "parent_admin");
+      session.kind === "family_admin" ||
+      session.kind === "super_admin");
 
   const myRedemptionsRows = session
     ? await prisma.rewardRedemption.findMany({

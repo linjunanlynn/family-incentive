@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { localDateKeyToUtcMidnight } from "@/lib/utils";
 import { assertCanScore } from "@/lib/guard";
+import { canAccessChild, childFamilyId } from "@/lib/family-scope";
 import { revalidatePath } from "next/cache";
 
 export async function logBehaviorAction(input: {
@@ -14,16 +15,18 @@ export async function logBehaviorAction(input: {
 }) {
   const behavior = await prisma.behavior.findUnique({
     where: { id: input.behaviorId },
-    select: { id: true, type: true, points: true, categoryId: true, archived: true },
+    select: { id: true, type: true, points: true, categoryId: true, archived: true, category: { select: { childId: true } } },
   });
-  if (!behavior || behavior.archived) {
+  if (!behavior || behavior.archived || behavior.category.childId !== input.childId) {
     return { ok: false as const, error: "behavior_unavailable" };
   }
 
   const scorer = await assertCanScore();
-  if (!scorer) {
+  if (!scorer || !(await canAccessChild(scorer, input.childId))) {
     return { ok: false as const, error: "forbidden" as const };
   }
+  const familyId = await childFamilyId(input.childId);
+  if (!familyId) return { ok: false as const, error: "forbidden" as const };
   const operatorId = scorer.memberId;
   const day = localDateKeyToUtcMidnight(input.dateKey);
   const existing = await prisma.logEntry.findFirst({
@@ -40,6 +43,7 @@ export async function logBehaviorAction(input: {
 
   const entry = await prisma.logEntry.create({
     data: {
+      familyId,
       childId: input.childId,
       behaviorId: behavior.id,
       type: behavior.type,
@@ -58,7 +62,12 @@ export async function logBehaviorAction(input: {
 export async function deleteLogAction(id: string) {
   const scorer = await assertCanScore();
   if (!scorer) return { ok: false as const };
-  await prisma.logEntry.delete({ where: { id } });
+  await prisma.logEntry.deleteMany({
+    where: {
+      id,
+      ...(scorer.kind === "super_admin" ? {} : { familyId: scorer.familyId ?? "__no_family__" }),
+    },
+  });
   revalidatePath("/", "layout");
   return { ok: true as const };
 }
@@ -69,9 +78,10 @@ export async function updateLogOccurrencesAction(id: string, occurrences: number
   if (!scorer) return { ok: false as const };
   const log = await prisma.logEntry.findUnique({
     where: { id },
-    select: { id: true, points: true, type: true },
+    select: { id: true, points: true, type: true, familyId: true },
   });
   if (!log) return { ok: false as const };
+  if (scorer.kind !== "super_admin" && log.familyId !== scorer.familyId) return { ok: false as const };
   const occ = Math.max(1, Math.min(20, occurrences));
   await prisma.logEntry.update({
     where: { id },

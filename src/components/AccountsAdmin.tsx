@@ -48,11 +48,13 @@ type Row = {
 export function AccountsAdmin({
   accounts,
   members,
-  children,
+  children_,
+  viewerKind,
 }: {
   accounts: Row[];
   members: { id: string; nameZh: string; nameEn: string; userAccount: { id: string } | null }[];
-  children: { id: string; nameZh: string; nameEn: string; userAccount: { id: string } | null }[];
+  children_: { id: string; nameZh: string; nameEn: string; userAccount: { id: string } | null }[];
+  viewerKind: AccountKind;
 }) {
   const { t, locale, pick } = useI18n();
   const router = useRouter();
@@ -64,6 +66,8 @@ export function AccountsAdmin({
   const [linkChildId, setLinkChildId] = useState("");
 
   function kindLabel(k: string) {
+    if (k === "super_admin") return locale === "zh" ? "主管理员" : "Super admin";
+    if (k === "family_admin") return locale === "zh" ? "家庭管理员" : "Family admin";
     if (k === "parent_admin") return t.auth.kindAdmin;
     if (k === "parent") return t.auth.kindParent;
     return t.auth.kindChild;
@@ -94,6 +98,7 @@ export function AccountsAdmin({
 
   return (
     <div className="space-y-8">
+      {viewerKind !== "super_admin" && (
       <section className="card p-4 space-y-3">
         <div className="font-medium">{t.auth.createAccount}</div>
         <form onSubmit={createAccount} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -108,7 +113,6 @@ export function AccountsAdmin({
           <div>
             <label className="text-xs text-[color:var(--foreground-muted)]">{t.auth.accountKind}</label>
             <select className="input mt-1" value={kind} onChange={(e) => setKind(e.target.value as AccountKind)}>
-              <option value="parent_admin">{t.auth.kindAdmin}</option>
               <option value="parent">{t.auth.kindParent}</option>
               <option value="child">{t.auth.kindChild}</option>
             </select>
@@ -118,7 +122,7 @@ export function AccountsAdmin({
               <label className="text-xs text-[color:var(--foreground-muted)]">{t.auth.linkChild}</label>
               <select className="input mt-1" value={linkChildId} onChange={(e) => setLinkChildId(e.target.value)} required>
                 <option value="">—</option>
-                {children
+                {children_
                   .filter((c) => !c.userAccount)
                   .map((c) => (
                     <option key={c.id} value={c.id}>
@@ -149,6 +153,7 @@ export function AccountsAdmin({
           </div>
         </form>
       </section>
+      )}
 
       <section className="card overflow-hidden -mx-3 px-0 sm:mx-0 sm:px-0">
         <div className="overflow-x-auto overscroll-x-contain touch-pan-x [-webkit-overflow-scrolling:touch]">

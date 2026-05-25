@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentChildId } from "@/lib/session";
 import { dict } from "@/i18n/dictionaries";
 import { getSession } from "@/lib/get-session";
+import { childWhereFor } from "@/lib/family-scope";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -65,9 +66,9 @@ export default async function RootLayout({
   }
 
   const allChildren = await prisma.child.findMany({
-    where: { archived: false },
+    where: { archived: false, ...childWhereFor(raw) },
     orderBy: { order: "asc" },
-    select: { id: true, nameZh: true, nameEn: true, emoji: true, color: true },
+    select: { id: true, nameZh: true, nameEn: true, emoji: true, color: true, avatarUrl: true, backgroundUrl: true },
   });
 
   const childrenForBar =

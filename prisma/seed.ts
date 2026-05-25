@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { PrismaClient } from "../src/generated/prisma";
 
 const prisma = new PrismaClient();
+const DEFAULT_FAMILY_ID = "default-family";
 
 type SeedBehavior = { type: "positive" | "negative"; zh: string; en: string; points?: number };
 type SeedCategory = {
@@ -218,9 +219,10 @@ const defaultMembers = [
 async function seedChild(child: SeedChild) {
   const created = await prisma.child.upsert({
     where: { id: child.nameEn.toLowerCase() },
-    update: {},
+    update: { familyId: DEFAULT_FAMILY_ID },
     create: {
       id: child.nameEn.toLowerCase(),
+      familyId: DEFAULT_FAMILY_ID,
       nameZh: child.nameZh,
       nameEn: child.nameEn,
       emoji: child.emoji,
@@ -332,6 +334,7 @@ async function seedRewards() {
       where: {
         // re-use Chinese name as the idempotency key — names are unique enough
         // for a seed list and do not collide with admin-created ones.
+        familyId: DEFAULT_FAMILY_ID,
         nameZh: r.zh,
         childId: r.childId ?? null,
       },
@@ -340,6 +343,7 @@ async function seedRewards() {
     if (existing) continue;
     await prisma.reward.create({
       data: {
+        familyId: DEFAULT_FAMILY_ID,
         childId: r.childId ?? null,
         nameZh: r.zh,
         nameEn: r.en,
@@ -356,11 +360,17 @@ async function seedRewards() {
 }
 
 async function main() {
+  await prisma.family.upsert({
+    where: { id: DEFAULT_FAMILY_ID },
+    update: { nameZh: "默认家庭", nameEn: "Default Family" },
+    create: { id: DEFAULT_FAMILY_ID, nameZh: "默认家庭", nameEn: "Default Family" },
+  });
+
   for (const m of defaultMembers) {
     await prisma.member.upsert({
       where: { id: m.nameEn.toLowerCase() },
-      update: {},
-      create: { id: m.nameEn.toLowerCase(), ...m },
+      update: { familyId: DEFAULT_FAMILY_ID },
+      create: { id: m.nameEn.toLowerCase(), familyId: DEFAULT_FAMILY_ID, ...m },
     });
   }
 
@@ -372,16 +382,18 @@ async function main() {
   const passwordHash = await bcrypt.hash(defaultPassword, 10);
   const seedAccounts: {
     username: string;
-    accountKind: "parent_admin" | "parent" | "child";
+    accountKind: "super_admin" | "family_admin" | "parent" | "child";
+    familyId: string | null;
     memberId: string | null;
     childId: string | null;
   }[] = [
-    { username: "mom", accountKind: "parent_admin", memberId: "mom", childId: null },
-    { username: "dad", accountKind: "parent", memberId: "dad", childId: null },
-    { username: "grandma", accountKind: "parent", memberId: "grandma", childId: null },
-    { username: "grandpa", accountKind: "parent", memberId: "grandpa", childId: null },
-    { username: "jimmy", accountKind: "child", memberId: null, childId: "jimmy" },
-    { username: "aimee", accountKind: "child", memberId: null, childId: "aimee" },
+    { username: "superadmin", accountKind: "super_admin", familyId: null, memberId: null, childId: null },
+    { username: "mom", accountKind: "family_admin", familyId: DEFAULT_FAMILY_ID, memberId: "mom", childId: null },
+    { username: "dad", accountKind: "parent", familyId: DEFAULT_FAMILY_ID, memberId: "dad", childId: null },
+    { username: "grandma", accountKind: "parent", familyId: DEFAULT_FAMILY_ID, memberId: "grandma", childId: null },
+    { username: "grandpa", accountKind: "parent", familyId: DEFAULT_FAMILY_ID, memberId: "grandpa", childId: null },
+    { username: "jimmy", accountKind: "child", familyId: DEFAULT_FAMILY_ID, memberId: null, childId: "jimmy" },
+    { username: "aimee", accountKind: "child", familyId: DEFAULT_FAMILY_ID, memberId: null, childId: "aimee" },
   ];
   for (const row of seedAccounts) {
     await prisma.userAccount.upsert({
@@ -389,6 +401,7 @@ async function main() {
       update: {
         passwordHash,
         accountKind: row.accountKind,
+        familyId: row.familyId,
         memberId: row.memberId,
         childId: row.childId,
         disabled: false,
@@ -397,6 +410,7 @@ async function main() {
         username: row.username,
         passwordHash,
         accountKind: row.accountKind,
+        familyId: row.familyId,
         memberId: row.memberId,
         childId: row.childId,
       },

@@ -31,7 +31,7 @@ type Props = {
   selectedDateKey: string;
   /** Calendar "today" for the no-activity banner link. */
   todayDateKey: string;
-  child: { id: string; nameZh: string; nameEn: string; emoji: string; color: string };
+  child: { id: string; nameZh: string; nameEn: string; emoji: string; color: string; avatarUrl: string | null; backgroundUrl: string | null };
   currentPoints: number;
   rangeStats: { positive: number; negative: number; net: number; count: number };
   daily: DailyPoint[];
@@ -199,11 +199,8 @@ export function DashboardClient(props: Props) {
       <section className="card p-3 sm:p-4 min-w-0">
         {/* —— Mobile / tablet —— */}
         <div className="grid grid-cols-[3rem_minmax(0,1fr)_max-content] gap-x-3 gap-y-3 items-center min-w-0 lg:hidden">
-          <div
-            className="col-start-1 row-start-1 w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center shrink-0 justify-self-start"
-            style={{ background: `${props.child.color}22`, color: props.child.color }}
-          >
-            {props.child.emoji}
+          <div className="col-start-1 row-start-1 justify-self-start">
+            <ChildAvatar child={props.child} />
           </div>
           <div className="col-start-2 row-start-1 min-w-0 flex items-center gap-2">
             <span className="truncate text-lg font-semibold">{pick(props.child)}</span>
@@ -231,12 +228,7 @@ export function DashboardClient(props: Props) {
         {/* —— Desktop —— */}
         <div className="hidden lg:flex flex-row items-center justify-between gap-4 min-w-0">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div
-              className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center shrink-0"
-              style={{ background: `${props.child.color}22`, color: props.child.color }}
-            >
-              {props.child.emoji}
-            </div>
+            <ChildAvatar child={props.child} />
             <div className="min-w-0">
               <div className="text-xl font-semibold flex flex-wrap items-center gap-2">
                 <span className="truncate">{pick(props.child)}</span>
@@ -271,6 +263,7 @@ export function DashboardClient(props: Props) {
           value={props.currentPoints}
           accent={props.child.color}
           heroTheme={heroTheme}
+          heroBackgroundUrl={props.child.backgroundUrl}
           highlight
         />
         <KpiCard
@@ -606,6 +599,26 @@ function KpiStar({
   );
 }
 
+function ChildAvatar({
+  child,
+}: {
+  child: { emoji: string; color: string; avatarUrl: string | null };
+}) {
+  return (
+    <div
+      className="w-12 h-12 rounded-2xl text-2xl inline-flex items-center justify-center shrink-0 overflow-hidden bg-[color:var(--surface-2)]"
+      style={{ background: `${child.color}22`, color: child.color }}
+    >
+      {child.avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={child.avatarUrl} alt="" className="w-full h-full object-cover" />
+      ) : (
+        child.emoji
+      )}
+    </div>
+  );
+}
+
 function KpiCard({
   icon,
   label,
@@ -613,6 +626,7 @@ function KpiCard({
   subtitle,
   accent,
   heroTheme,
+  heroBackgroundUrl,
   highlight,
   className,
 }: {
@@ -622,6 +636,7 @@ function KpiCard({
   subtitle?: React.ReactNode;
   accent?: string;
   heroTheme?: "kaiju" | "ice-princess";
+  heroBackgroundUrl?: string | null;
   highlight?: boolean;
   className?: string;
 }) {
@@ -646,7 +661,11 @@ function KpiCard({
           ].join(", "),
         }}
       >
-        <ChildHeroBackdrop theme={heroTheme ?? "kaiju"} accent={accent} />
+        <ChildHeroBackdrop
+          theme={heroTheme ?? "kaiju"}
+          accent={accent}
+          backgroundUrl={heroBackgroundUrl}
+        />
         <div
           className="pointer-events-none absolute inset-0 z-[1]"
           style={{
@@ -714,24 +733,34 @@ function KpiCard({
 function ChildHeroBackdrop({
   theme,
   accent,
+  backgroundUrl,
 }: {
   theme: "kaiju" | "ice-princess";
   accent: string;
+  backgroundUrl?: string | null;
 }) {
   const posterUrl =
-    theme === "ice-princess"
+    backgroundUrl ??
+    (theme === "ice-princess"
       ? "/posters/aimee-elsa-poster.jpg"
-      : "/posters/jimmy-godzilla-poster.jpg";
+      : "/posters/jimmy-godzilla-poster.jpg");
 
   return (
     <div className="pointer-events-none absolute inset-y-0 right-0 w-[56%] overflow-hidden" aria-hidden>
       {/* Poster slab (cinema style): image bleeds outside card and fades into card color */}
       <div
-        className="absolute -right-8 top-1/2 h-[134%] w-[122%] -translate-y-1/2 rounded-l-[2.4rem] blur-[0.45px] opacity-90"
+        className={cn(
+          "absolute -right-8 top-1/2 h-[134%] w-[122%] -translate-y-1/2 rounded-l-[2.4rem] blur-[0.45px]",
+          backgroundUrl ? "opacity-80" : "opacity-90",
+        )}
         style={{
           backgroundImage: `url(${posterUrl})`,
           backgroundSize: "cover",
-          backgroundPosition: theme === "ice-princess" ? "72% center" : "58% center",
+          backgroundPosition: backgroundUrl
+            ? "center"
+            : theme === "ice-princess"
+              ? "72% center"
+              : "58% center",
           boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${accent} 16%, transparent)`,
           WebkitMaskImage:
             "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.12) 14%, rgba(0,0,0,0.4) 28%, rgba(0,0,0,0.7) 46%, rgba(0,0,0,0.92) 66%, #000 100%)",

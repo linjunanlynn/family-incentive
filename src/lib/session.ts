@@ -1,6 +1,4 @@
 import { cookies } from "next/headers";
-import { getSession } from "@/lib/get-session";
-import { isChild } from "@/lib/permissions";
 
 export const CHILD_COOKIE = "fi_child";
 

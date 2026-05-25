@@ -4,6 +4,7 @@ import { CheckinClient } from "@/components/CheckinClient";
 import { addDays, toLocalDateKey } from "@/lib/utils";
 import { getSession } from "@/lib/get-session";
 import { canScore, isChild } from "@/lib/permissions";
+import { childWhereFor } from "@/lib/family-scope";
 
 type SearchParams = Promise<{ date?: string }>;
 
@@ -12,8 +13,9 @@ export default async function CheckinPage({ searchParams }: { searchParams: Sear
   const dateKey = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : toLocalDateKey(new Date());
 
   const childId = await getCurrentChildId();
+  const session = await getSession();
   const children = await prisma.child.findMany({
-    where: { archived: false },
+    where: { archived: false, ...childWhereFor(session) },
     orderBy: { order: "asc" },
   });
   if (children.length === 0) {
@@ -34,7 +36,6 @@ export default async function CheckinPage({ searchParams }: { searchParams: Sear
 
   const dayStart = new Date(`${dateKey}T00:00:00.000Z`);
   const dayEnd = new Date(`${toLocalDateKey(addDays(new Date(dateKey), 1))}T00:00:00.000Z`);
-  const session = await getSession();
   const canScoreFlag = canScore(session);
 
   const todayLogs = await prisma.logEntry.findMany({
